@@ -9,5 +9,7 @@ RUN mvn -q clean package
 FROM tomcat:10.1-jdk17
 RUN rm -rf /usr/local/tomcat/webapps/*
 COPY --from=build /app/target/demo1-1.0-SNAPSHOT.war /usr/local/tomcat/webapps/ROOT.war
-EXPOSE 8080
+# Hugging Face Space 要求应用监听 7860 端口，改 Tomcat 的 Connector
+RUN sed -i 's/port="8080"/port="7860"/' /usr/local/tomcat/conf/server.xml
+EXPOSE 7860
 CMD ["catalina.sh", "run"]
