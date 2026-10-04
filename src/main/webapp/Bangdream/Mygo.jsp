@@ -297,6 +297,8 @@
         .char-source a{ color: #1c7fb0; }
 
         .char-avatar img{ cursor: zoom-in; }
+        /* 每张卡片里隐藏的完整资料，克隆进灯箱右侧展示 */
+        .char-detail{ display: none; }
         .lightbox{
             position: fixed;
             inset: 0;
@@ -304,6 +306,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 24px;
             background: rgba(20, 25, 35, 0.75);
             backdrop-filter: blur(6px);
             -webkit-backdrop-filter: blur(6px);
@@ -315,40 +318,78 @@
             opacity: 1;
             visibility: visible;
         }
-        .lightbox img{
-            max-width: 82vw;
-            max-height: 82vh;
-            object-fit: contain;
-            border-radius: 12px;
-            background: #ffffff;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            transform: scale(0.9);
+        .lb-inner{
+            display: flex;
+            align-items: stretch;
+            gap: 32px;
+            max-width: 94vw;
+            max-height: 88vh;
+            padding: 28px 32px;
+            background: rgba(255, 255, 255, 0.94);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transform: scale(0.92);
             transition: transform 0.3s ease;
         }
-        .lightbox.open img{
+        .lightbox.open .lb-inner{
             transform: scale(1);
         }
-        .lightbox .lb-close{
+        .lb-figure{
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-width: 46vw;
+        }
+        .lb-figure img{
+            max-width: 100%;
+            max-height: 82vh;
+            object-fit: contain;
+            object-position: center bottom;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #eaf6fb, #cdeaf6);
+            border: 1px solid rgba(28, 127, 176, 0.25);
+        }
+        .lb-detail{
+            flex: 1 1 auto;
+            min-width: 260px;
+            max-width: 400px;
+            overflow-y: auto;
+            max-height: 82vh;
+            padding-right: 6px;
+            text-align: left;
+        }
+        .lb-detail .char-name-row{ margin-bottom: 6px; }
+        .lb-detail .char-name-row h3{ margin: 0; font-size: 24px; color: #2a3d4a; }
+        .lb-detail .char-meta,
+        .lb-detail .char-color{ text-align: left; margin: 3px 0; }
+        .lb-detail .char-info{ margin: 14px 0; }
+        .lb-detail .char-bio{ margin-bottom: 12px; }
+        .lb-detail .char-origin{
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #8a97a2;
+            border-top: 1px dashed rgba(28, 127, 176, 0.25);
+            padding-top: 10px;
+        }
+        .lb-close{
             position: absolute;
-            top: 24px;
-            right: 32px;
+            top: 20px;
+            right: 28px;
             color: #ffffff;
             font-size: 34px;
             line-height: 1;
             cursor: pointer;
             user-select: none;
+            z-index: 1;
             transition: opacity 0.2s ease;
         }
-        .lightbox .lb-close:hover{ opacity: 0.7; }
-        .lightbox .lb-name{
-            position: absolute;
-            bottom: 28px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: #ffffff;
-            font-size: 18px;
-            letter-spacing: 2px;
+        .lb-close:hover{ opacity: 0.7; }
+        @media (max-width: 720px){
+            .lb-inner{ flex-direction: column; overflow-y: auto; }
+            .lb-figure{ max-width: 100%; }
+            .lb-detail{ max-width: 100%; overflow-y: visible; }
         }
     </style>
 </head>
@@ -366,7 +407,7 @@
         <div class="char-grid">
 
             <div class="char-card" style="--c:#77BBDD;">
-                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/tomori.png" alt="高松灯"></div>
+                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/tomori.png" alt="高松灯" loading="lazy"></div>
                 <div class="char-name-row">
                     <h3>高松 灯</h3>
                     <span class="role-badge">主唱 / 作词</span>
@@ -379,10 +420,27 @@
                     <div class="row"><span class="label">兴趣</span><span>收集光滑小物（创可贴、石头）</span></div>
                 </div>
                 <p class="char-bio">自认不擅长歌唱却仍努力吟唱，把心声写进每一段作词；容易寂寞，常感受着孤独。</p>
+                <div class="char-detail">
+                    <div style="--c:#77BBDD;">
+                        <div class="char-name-row">
+                            <h3>高松 灯</h3>
+                            <span class="role-badge">主唱 / 作词</span>
+                        </div>
+                        <p class="char-meta">11月22日 · 天蝎座 · CV 羊宫妃那</p>
+                        <p class="char-color"><span class="color-dot"></span>代表色 #77BBDD</p>
+                        <div class="char-info">
+                            <div class="row"><span class="label">喜欢</span><span>金平糖——小小圆圆的，形状也有像星星一样的</span></div>
+                            <div class="row"><span class="label">讨厌</span><span>红鱼子酱和明太鱼子酱，觉得好像是直接吃了有生命的东西一样</span></div>
+                            <div class="row"><span class="label">兴趣</span><span>收集东西，比如创可贴、石头之类光滑的东西，大小正正好好</span></div>
+                        </div>
+                        <p class="char-bio">虽然自认不是那么擅长唱歌，但仍会努力去唱。由灯写在笔记本上的作词，之后交给立希谱曲。对成员的评价：乐奈有实力，爽世待人温柔，爱音正一同努力着——立希："那我呢？"容易感到寂寞，常感受着孤独。</p>
+                        <p class="char-origin">姓氏来源：东京都丰岛区高松。</p>
+                    </div>
+                </div>
             </div>
 
             <div class="char-card" style="--c:#FF8899;">
-                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/anon.png" alt="千早爱音"></div>
+                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/anon.png" alt="千早爱音" loading="lazy"></div>
                 <div class="char-name-row">
                     <h3>千早 爱音</h3>
                     <span class="role-badge">吉他手</span>
@@ -396,10 +454,28 @@
                     <div class="row"><span class="label">兴趣</span><span>看美容视频、追流行</span></div>
                 </div>
                 <p class="char-bio">昵称"小爱音"，即使练习辛苦也努力克服；觉得立希很唠叨。</p>
+                <div class="char-detail">
+                    <div style="--c:#FF8899;">
+                        <div class="char-name-row">
+                            <h3>千早 爱音</h3>
+                            <span class="role-badge">吉他手</span>
+                        </div>
+                        <p class="char-meta">9月8日 · 处女座 · CV 立石凛</p>
+                        <p class="char-color"><span class="color-dot"></span>代表色 #FF8899</p>
+                        <div class="char-info">
+                            <div class="row"><span class="label">乐器</span><span>ESP ULTRATONE Anon Custom (See Thru Surf Green)</span></div>
+                            <div class="row"><span class="label">喜欢</span><span>熏三文鱼和水果三明治</span></div>
+                            <div class="row"><span class="label">讨厌</span><span>梅干，和其他比较酸的东西</span></div>
+                            <div class="row"><span class="label">兴趣</span><span>看美容方面的视频，主要是想了解现在流行的东西</span></div>
+                        </div>
+                        <p class="char-bio">昵称是爱音或者小爱音。即使为了Live而进行的练习都很辛苦，爱音还是很努力去克服困难。觉得立希很唠叨。</p>
+                        <p class="char-origin">姓氏来源：东京都丰岛区千早。</p>
+                    </div>
+                </div>
             </div>
 
             <div class="char-card" style="--c:#77DD77;">
-                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/rana.png" alt="要乐奈"></div>
+                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/rana.png" alt="要乐奈" loading="lazy"></div>
                 <div class="char-name-row">
                     <h3>要 乐奈</h3>
                     <span class="role-badge">主音吉他</span>
@@ -413,10 +489,28 @@
                     <div class="row"><span class="label">兴趣</span><span>吸猫</span></div>
                 </div>
                 <p class="char-bio">"因为有趣所以加入乐队"，实力派吉他手，对猫极感兴趣。</p>
+                <div class="char-detail">
+                    <div style="--c:#77DD77;">
+                        <div class="char-name-row">
+                            <h3>要 乐奈</h3>
+                            <span class="role-badge">主音吉他</span>
+                        </div>
+                        <p class="char-meta">2月22日 · 双鱼座 · CV 青木阳菜</p>
+                        <p class="char-color"><span class="color-dot"></span>代表色 #77DD77</p>
+                        <div class="char-info">
+                            <div class="row"><span class="label">乐器</span><span>ESP POTBELLY Rāna Custom (Distressed See Thru Wine Red)</span></div>
+                            <div class="row"><span class="label">喜欢</span><span>抹茶，还有荞麦面</span></div>
+                            <div class="row"><span class="label">讨厌</span><span>韭菜，还有山药泥也不喜欢</span></div>
+                            <div class="row"><span class="label">兴趣</span><span>吸猫，对猫很有兴趣</span></div>
+                        </div>
+                        <p class="char-bio">"因为觉得很有趣所以就加入了乐队。"实力派吉他手，对猫极感兴趣，常常凭感觉行动。</p>
+                        <p class="char-origin">姓氏来源：东京都丰岛区要町。</p>
+                    </div>
+                </div>
             </div>
 
             <div class="char-card" style="--c:#FFDD88;">
-                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/soyo.png" alt="长崎素世"></div>
+                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/soyo.png" alt="长崎素世" loading="lazy"></div>
                 <div class="char-name-row">
                     <h3>长崎 素世</h3>
                     <span class="role-badge">贝斯手</span>
@@ -430,10 +524,28 @@
                     <div class="row"><span class="label">兴趣</span><span>aroma香薰（按心情选香）</span></div>
                 </div>
                 <p class="char-bio">和刚组乐队不久的大家一起快乐努力；被灯夸"温柔"而十分高兴。</p>
+                <div class="char-detail">
+                    <div style="--c:#FFDD88;">
+                        <div class="char-name-row">
+                            <h3>长崎 素世</h3>
+                            <span class="role-badge">贝斯手</span>
+                        </div>
+                        <p class="char-meta">5月27日 · 双子座 · CV 小日向美香</p>
+                        <p class="char-color"><span class="color-dot"></span>代表色 #FFDD88</p>
+                        <div class="char-info">
+                            <div class="row"><span class="label">乐器</span><span>ESP GB Soyo Custom (3 Tone Sunburst)</span></div>
+                            <div class="row"><span class="label">喜欢</span><span>蔬菜通心粉汤，也经常喝红茶</span></div>
+                            <div class="row"><span class="label">讨厌</span><span>内脏之类的东西，不太喜欢那种口感</span></div>
+                            <div class="row"><span class="label">兴趣</span><span>aroma香薰，根据心情选香：想爽快舒畅用柠檬香草，想安稳入睡用香柠檬</span></div>
+                        </div>
+                        <p class="char-bio">和才刚刚开始组乐队还没多久的大家一起快乐努力着。对于被灯说自己很温柔而感到很高兴。</p>
+                        <p class="char-origin">姓氏来源：东京都丰岛区長崎。</p>
+                    </div>
+                </div>
             </div>
 
             <div class="char-card" style="--c:#7777AA;">
-                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/riki.png" alt="椎名立希"></div>
+                <div class="char-avatar"><img src="${pageContext.request.contextPath}/BangDreamsimg/Mygo/riki.png" alt="椎名立希" loading="lazy"></div>
                 <div class="char-name-row">
                     <h3>椎名 立希</h3>
                     <span class="role-badge">鼓手 / 作曲</span>
@@ -447,6 +559,24 @@
                     <div class="row"><span class="label">兴趣</span><span>收集熊猫周边</span></div>
                 </div>
                 <p class="char-bio">负责作曲，把灯的世界观谱成曲；觉得灯的歌声与LIVE很棒，却嘴硬不承认。</p>
+                <div class="char-detail">
+                    <div style="--c:#7777AA;">
+                        <div class="char-name-row">
+                            <h3>椎名 立希</h3>
+                            <span class="role-badge">鼓手 / 作曲</span>
+                        </div>
+                        <p class="char-meta">8月9日 · 狮子座 · CV 林鼓子</p>
+                        <p class="char-color"><span class="color-dot"></span>代表色 #7777AA</p>
+                        <div class="char-info">
+                            <div class="row"><span class="label">乐器</span><span>Pearl Masters Maple Gum (Chrome Contrail)</span></div>
+                            <div class="row"><span class="label">喜欢</span><span>杏仁豆腐</span></div>
+                            <div class="row"><span class="label">讨厌</span><span>香菇和魔芋丝，其实不是讨厌吃，只是小时候因为名字（たき）被取笑过</span></div>
+                            <div class="row"><span class="label">兴趣</span><span>收集熊猫周边</span></div>
+                        </div>
+                        <p class="char-bio">同时也负责作曲，拿到灯的歌词以后，创作出切合她世界观的歌曲。觉得灯的歌声很好听、歌词也很不错、LIVE也真的很棒，却嘴硬不肯承认这一点。</p>
+                        <p class="char-origin">姓氏来源：东京都丰岛区椎名町（历史地名，在今南長崎町和目白町）。</p>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -457,6 +587,9 @@
     </div>
 
     <a class="back-link" href="../乐队主页.jsp">← 返回主页</a>
+
+    <script src="${pageContext.request.contextPath}/js/presence.js"></script>
+    <script src="${pageContext.request.contextPath}/js/music-player.js"></script>
 
     <script>
         (function(){
@@ -526,17 +659,23 @@
         (function(){
             var box = document.createElement('div');
             box.className = 'lightbox';
-            box.innerHTML = '<span class="lb-close">&times;</span><img alt=""><div class="lb-name"></div>';
+            box.innerHTML =
+                '<span class="lb-close">&times;</span>' +
+                '<div class="lb-inner">' +
+                    '<div class="lb-figure"><img alt=""></div>' +
+                    '<div class="lb-detail"></div>' +
+                '</div>';
             document.body.appendChild(box);
 
-            var bigImg = box.querySelector('img');
-            var nameEl = box.querySelector('.lb-name');
+            var bigImg = box.querySelector('.lb-figure img');
+            var detailEl = box.querySelector('.lb-detail');
 
-            function open(src, name){
+            function open(src, detailHtml){
                 bigImg.src = src;
-                nameEl.textContent = name || '';
+                detailEl.innerHTML = detailHtml || '';
+                detailEl.scrollTop = 0;
                 box.classList.add('open');
-                document.body.style.overflow = 'hidden';   // 打开时禁止背景滚动
+                document.body.style.overflow = 'hidden';
             }
             function close(){
                 box.classList.remove('open');
@@ -545,17 +684,17 @@
 
             document.querySelectorAll('.char-card').forEach(function(card){
                 var av = card.querySelector('.char-avatar img');
-                if (!av) return;
-                var h3 = card.querySelector('h3');
+                var detail = card.querySelector('.char-detail');
+                if (!av || !detail) return;
                 av.addEventListener('click', function(){
-                    open(av.src, h3 ? h3.textContent : '');
+                    open(av.src, detail.innerHTML);
                 });
             });
 
             box.addEventListener('click', function(e){
-                if (e.target === bigImg) return;   // 点图片本身不关闭
-                close();
+                if (e.target === box) close();
             });
+            box.querySelector('.lb-close').addEventListener('click', close);
             document.addEventListener('keydown', function(e){
                 if (e.key === 'Escape') close();
             });

@@ -1,0 +1,2 @@
+#在启动tomcat 10.1.60 的时候，还需要在终端里面把隧道跑起来
+#代码如下: " cloudflared tunnel run demo1 "
