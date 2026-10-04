@@ -1,26 +1,23 @@
 (function () {
     try { init(); } catch (e) {}
     function init() {
-        // 从脚本自身 URL 推导 contextPath，最稳（各子目录页面都能算对）
         var ctx = '';
         try {
             var cs = document.currentScript;
             if (cs && cs.src) { var m = cs.src.indexOf('/js/music-player.js'); if (m >= 0) ctx = cs.src.substring(0, m); }
         } catch (e) {}
 
-        // 曲库：文件名对应 webapp/Music 下的真实文件（可继续往数组里加）
-        var TRACKS = [
-            { name: '哈基米 · Stay With Me (Phonk)', file: '绝对不是岚宝宝 - 哈基米Stay With Me (Phonk).mp3' },
-            { name: 'Monitoring', file: 'monitoring.ogg' }
+        var FALLBACK = [
+            '绝对不是岚宝宝 - 哈基米Stay With Me (Phonk).mp3',
+            'monitoring.ogg'
         ];
-        function urlOf(i) { return ctx + '/Music/' + encodeURIComponent(TRACKS[i].file); }
 
         var KEY = 'bgm.v1';
-        var st = { i: 0, t: 0, playing: false, vol: 0.8 };
+        var st = { f: null, t: 0, playing: false, vol: 0.8 };
         try {
             var s = JSON.parse(localStorage.getItem(KEY) || '{}');
             if (s && typeof s === 'object') {
-                if (typeof s.i === 'number' && TRACKS[s.i]) st.i = s.i;
+                if (typeof s.f === 'string') st.f = s.f;
                 if (typeof s.t === 'number') st.t = s.t;
                 if (typeof s.playing === 'boolean') st.playing = s.playing;
                 if (typeof s.vol === 'number') st.vol = s.vol;
@@ -59,26 +56,37 @@
             '<button id="bgm-fab" title="音乐">🎵</button>';
         document.body.appendChild(wrap);
 
-        var audio = new Audio(); audio.preload = 'auto'; audio.volume = st.vol;
-
         var ul = wrap.querySelector('#bgm-tracks');
-        var lis = [];
-        TRACKS.forEach(function (t, i) {
-            var li = document.createElement('li'); li.textContent = t.name; li.title = t.name;
-            li.onclick = function () { load(i, true); };
-            ul.appendChild(li); lis.push(li);
-        });
         var btnPlay = wrap.querySelector('#bgm-play');
         var fab = wrap.querySelector('#bgm-fab');
         var hint = wrap.querySelector('#bgm-hint');
+        var vol = wrap.querySelector('#bgm-vol'); vol.value = st.vol;
 
-        function mark() { for (var i = 0; i < lis.length; i++) lis[i].className = (i === st.i ? 'on' : ''); }
-        function save() { try { localStorage.setItem(KEY, JSON.stringify({ i: st.i, t: st.t, playing: st.playing, vol: st.vol })); } catch (e) {} }
+        var audio = new Audio(); audio.preload = 'auto'; audio.volume = st.vol;
+
+        var TRACKS = [];
+        var lis = [];
+        var cur = 0;
+
+        function urlOf(i) { return ctx + '/Music/' + encodeURIComponent(TRACKS[i]); }
+        function pretty(n) { return n.replace(/\.[^.]+$/, ''); }
+        function mark() { for (var i = 0; i < lis.length; i++) lis[i].className = (i === cur ? 'on' : ''); }
+        function save() { try { localStorage.setItem(KEY, JSON.stringify({ f: TRACKS[cur], t: st.t, playing: st.playing, vol: st.vol })); } catch (e) {} }
         function ui() { btnPlay.textContent = st.playing ? '⏸' : '▶'; }
         function seek(t) { try { if (t > 0 && isFinite(t)) audio.currentTime = t; } catch (e) {} }
+
+        function buildList() {
+            ul.innerHTML = ''; lis = [];
+            TRACKS.forEach(function (file, i) {
+                var li = document.createElement('li'); li.textContent = pretty(file); li.title = file;
+                li.onclick = function () { load(i, true); };
+                ul.appendChild(li); lis.push(li);
+            });
+        }
         function load(i, autoplay) {
-            st.i = (i + TRACKS.length) % TRACKS.length; st.t = 0;
-            audio.src = urlOf(st.i); mark(); save();
+            if (!TRACKS.length) return;
+            cur = (i + TRACKS.length) % TRACKS.length;
+            st.t = 0; audio.src = urlOf(cur); mark(); save();
             if (autoplay) play();
         }
         function play() {
@@ -92,14 +100,13 @@
 
         audio.addEventListener('loadedmetadata', function () { seek(st.t); });
         audio.addEventListener('timeupdate', function () { st.t = audio.currentTime; });
-        audio.addEventListener('ended', function () { load(st.i + 1, true); });
+        audio.addEventListener('ended', function () { load(cur + 1, true); });
         audio.addEventListener('play', function () { if (hint) hint.style.display = 'none'; });
 
         fab.onclick = function () { wrap.classList.toggle('open'); };
         btnPlay.onclick = toggle;
-        wrap.querySelector('#bgm-prev').onclick = function () { load(st.i - 1, st.playing); };
-        wrap.querySelector('#bgm-next').onclick = function () { load(st.i + 1, st.playing); };
-        var vol = wrap.querySelector('#bgm-vol'); vol.value = st.vol;
+        wrap.querySelector('#bgm-prev').onclick = function () { load(cur - 1, st.playing); };
+        wrap.querySelector('#bgm-next').onclick = function () { load(cur + 1, st.playing); };
         vol.oninput = function () { st.vol = parseFloat(vol.value); audio.volume = st.vol; save(); };
 
         setInterval(function () { if (st.playing) save(); }, 2000);
@@ -107,17 +114,27 @@
         window.addEventListener('beforeunload', save);
         document.addEventListener('visibilitychange', function () { if (document.hidden) save(); });
 
-        // 初始化：定位到上次的曲目；若上次在播则尝试续播
-        mark(); ui(); audio.src = urlOf(st.i);
-        if (st.playing) {
-            play();
-            var resumeOnce = function () {
-                if (!audio.paused) { detach(); return; }
-                seek(st.t); var p = audio.play(); if (p && p.catch) p.catch(function () {});
-                detach();
-            };
-            function detach() { document.removeEventListener('click', resumeOnce, true); }
-            document.addEventListener('click', resumeOnce, true);
+        function start() {
+            if (!TRACKS.length) { wrap.style.display = 'none'; return; }
+            // 恢复上次曲目（按文件名匹配，列表变了也能对上）
+            var k = st.f ? TRACKS.indexOf(st.f) : -1;
+            cur = k >= 0 ? k : 0;
+            buildList(); mark(); ui();
+            audio.src = urlOf(cur);
+            if (st.playing) {
+                play();
+                var resumeOnce = function () {
+                    if (!audio.paused) { detach(); return; }
+                    seek(st.t); var p = audio.play(); if (p && p.catch) p.catch(function () {});
+                    detach();
+                };
+                function detach() { document.removeEventListener('click', resumeOnce, true); }
+                document.addEventListener('click', resumeOnce, true);
+            }
         }
+
+        fetch(ctx + '/music?list=1').then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (list) { TRACKS = (list && list.length) ? list : FALLBACK; start(); })
+            .catch(function () { TRACKS = FALLBACK; start(); });
     }
 })();

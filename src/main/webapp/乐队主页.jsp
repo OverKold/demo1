@@ -546,6 +546,12 @@
             filter: brightness(1.08);
         }
 
+        /* 音乐悬浮按钮：主页右下角有登录/注销按钮，抬高到其正上方避免重叠（仅本页生效） */
+        #bgm { bottom: 70px !important; }
+        @media (max-width: 640px) {
+            #bgm { bottom: 64px !important; right: 12px !important; }
+        }
+
         .admin-login-overlay {
             position: fixed;
             inset: 0;
