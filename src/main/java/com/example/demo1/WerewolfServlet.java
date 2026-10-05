@@ -4,6 +4,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -112,6 +113,7 @@ public class WerewolfServlet extends HttpServlet {
     private List<P> aliveRole(Room r, String role) { List<P> l = new ArrayList<>(); for (P p : r.players) if (p.alive && role.equals(p.role)) l.add(p); return l; }
     private void log(Room r, String s) { r.log.add(s); if (r.log.size() > 60) r.log.remove(0); }
     private void kill(Room r, String n) { P p = player(r, n); if (p != null) p.alive = false; }
+    private boolean isAdmin(HttpServletRequest req) { HttpSession s = req.getSession(false); return s != null && Boolean.TRUE.equals(s.getAttribute("ADMIN")); }
 
     // ================= 状态机推进 =================
     private List<P> actors(Room r) {
@@ -287,9 +289,20 @@ public class WerewolfServlet extends HttpServlet {
         if (req.getParameter("list") != null) { writeList(resp, now); return; }
         String id = clean(req.getParameter("id"), MAX_ROOM), name = clean(req.getParameter("name"), MAX_NAME);
         if (id == null || id.isEmpty() || name == null || name.isEmpty()) { write(resp, "{\"error\":\"no room/name\"}"); return; }
-        Room r = room(id); String json;
-        synchronized (r) { touch(r, name, now); pump(r, now); json = state(r, name, now); }
+        Room r = room(id); String json; boolean admin = isAdmin(req);
+        synchronized (r) { touch(r, name, now); autoSeat(r, name); pump(r, now); json = state(r, name, now, admin); }
         write(resp, json);
+    }
+
+    /** GET 轮询时自动入座（仅等待阶段）：有空位就坐，满员且有机器人则顶替，行为与其它联机游戏一致 */
+    private void autoSeat(Room r, String name) {
+        if (r.phase != 0 || name == null || name.isEmpty() || player(r, name) != null) return;
+        if (r.players.size() < r.preset) {
+            r.players.add(new P(name)); log(r, "📣 " + name + " 入座 " + seatOf(r, name) + "（" + r.players.size() + "/" + r.preset + "）");
+        } else {
+            P bot = null; for (P p : r.players) if (p.bot) bot = p;
+            if (bot != null) { r.players.remove(bot); r.players.add(new P(name)); log(r, "🤖 " + bot.name + " 让位，" + name + " 入座 " + seatOf(r, name)); }
+        }
     }
 
     @Override
@@ -309,8 +322,15 @@ public class WerewolfServlet extends HttpServlet {
                         int ps = parseInt(req.getParameter("preset"), r.preset);
                         if (r.players.isEmpty() && (ps == 5 || ps == 8)) r.preset = ps;
                         if (me == null) {
-                            if (r.players.size() < r.preset) { r.players.add(new P(name)); log(r, "📣 " + name + " 入座 " + seatOf(r, name) + "（" + r.players.size() + "/" + r.preset + "）"); }
-                            else log(r, "📣 " + name + " 进入观战");
+                            if (r.players.size() < r.preset) {
+                                r.players.add(new P(name)); log(r, "📣 " + name + " 入座 " + seatOf(r, name) + "（" + r.players.size() + "/" + r.preset + "）");
+                            } else {
+                                P bot = null; for (P p : r.players) if (p.bot) bot = p;            // 满员：找最后一个机器人让位
+                                if (bot != null) {
+                                    r.players.remove(bot); r.players.add(new P(name));
+                                    log(r, "🤖 " + bot.name + " 让位，" + name + " 入座 " + seatOf(r, name) + "（" + r.players.size() + "/" + r.preset + "）");
+                                } else log(r, "📣 " + name + " 进入观战");                          // 全是真人才只能观战
+                            }
                         }
                     }
                     out = "{\"ok\":true}"; break;
@@ -369,9 +389,9 @@ public class WerewolfServlet extends HttpServlet {
                     break;
                 }
                 case "start": {
-                    if (me == null || r.players.isEmpty() || !r.players.get(0).name.equals(name)) out = "{\"ok\":false,\"error\":\"只有房主（1号）能开局\"}";
-                    else if (r.phase != 0) out = "{\"ok\":false,\"error\":\"游戏已在进行中\"}";
-                    else if (r.players.size() != r.preset) out = "{\"ok\":false,\"error\":\"必须凑齐 " + r.preset + " 名真人才能开局（当前 " + r.players.size() + "）\"}";
+                    if (r.phase != 0) out = "{\"ok\":false,\"error\":\"游戏已在进行中\"}";
+                    else if (me == null) out = "{\"ok\":false,\"error\":\"请先入座再开局（观战席不能开局）\"}";
+                    else if (r.players.size() != r.preset) out = "{\"ok\":false,\"error\":\"人数未满，还差 " + (r.preset - r.players.size()) + " 人（可用「🤖 加机器人 / 一键补满」凑满再开）\"}";
                     else { start(r, now); out = "{\"ok\":true}"; }
                     break;
                 }
@@ -426,14 +446,20 @@ public class WerewolfServlet extends HttpServlet {
                     break;
                 }
                 case "restart": {
-                    if (me == null || r.players.isEmpty() || !r.players.get(0).name.equals(name)) out = "{\"ok\":false,\"error\":\"只有房主可以重开\"}";
+                    if (me == null) out = "{\"ok\":false,\"error\":\"只有入座玩家可以重开\"}";
                     else {
                         for (P p : r.players) { p.alive = true; p.role = ""; p.ready = false; }
                         r.phase = 0; r.round = 0; r.nightStep = 0; r.seer.clear(); r.submitted.clear();
                         r.witchSaveUsed = r.witchPoisonUsed = false; r.winner = null; r.exiled = null; r.shootActor = null; r.wolfVictim = null;
-                        log(r, "🔄 房主重开了对局，请重新准备");
+                        log(r, "🔄 " + name + " 重开了对局，请重新准备");
                         out = "{\"ok\":true}";
                     }
+                    break;
+                }
+                case "adminskip": {
+                    if (!isAdmin(req)) out = "{\"ok\":false,\"error\":\"只有管理员可以跳过阶段\"}";
+                    else if (r.phase == 0 || r.phase == 5) out = "{\"ok\":false,\"error\":\"当前没有进行中的阶段\"}";
+                    else { log(r, "⏭ 管理员跳过了当前阶段（" + phaseText(r) + "）"); r.deadline = 0; pump(r, now); out = "{\"ok\":true}"; }
                     break;
                 }
                 default: out = "{\"ok\":false,\"error\":\"未知操作\"}";
@@ -474,9 +500,11 @@ public class WerewolfServlet extends HttpServlet {
             synchronized (r) {
                 r.members.entrySet().removeIf(e -> now - e.getValue().lastSeen > MEMBER_TTL);
                 int mc = r.members.size(); if (mc == 0) continue;
+                boolean hasBot = false; for (P p : r.players) if (p.bot) { hasBot = true; break; }
+                boolean canJoin = r.phase == 0 && (r.players.size() < r.preset || hasBot);
                 sum.append("{\"id\":\"").append(esc(en.getKey())).append("\",\"preset\":").append(r.preset)
                         .append(",\"phase\":").append(r.phase).append(",\"seated\":").append(r.players.size())
-                        .append(",\"members\":").append(mc).append(",\"canJoin\":").append(r.phase == 0 && r.players.size() < r.preset).append('}');
+                        .append(",\"members\":").append(mc).append(",\"canJoin\":").append(canJoin).append('}');
             }
             if (sum.length() == 0) continue;
             if (!first) sb.append(','); first = false; sb.append(sum);
@@ -484,9 +512,10 @@ public class WerewolfServlet extends HttpServlet {
         sb.append(']'); write(resp, sb.toString());
     }
 
-    private String state(Room r, String viewer, long now) {
+    private String state(Room r, String viewer, long now, boolean admin) {
         StringBuilder sb = new StringBuilder(1024);
         sb.append("{\"preset\":").append(r.preset).append(",\"phase\":").append(r.phase)
+                .append(",\"am\":").append(admin)
                 .append(",\"phaseText\":\"").append(phaseText(r)).append('"')
                 .append(",\"nightStep\":").append(r.nightStep)
                 .append(",\"round\":").append(r.round)
@@ -558,7 +587,7 @@ public class WerewolfServlet extends HttpServlet {
             }
             sb.append(']');
         }
-        sb.append("]}");
+        sb.append("}");
         return sb.toString();
     }
     private String phaseText(Room r) {

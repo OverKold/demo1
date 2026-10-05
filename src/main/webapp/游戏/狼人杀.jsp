@@ -92,7 +92,9 @@
     <input id="roomId" type="text" maxlength="32" placeholder="输入房间号，如：a" autocomplete="off">
     <select id="preset"><option value="5">5 人局（1 狼）</option><option value="8">8 人局（2 狼）</option></select>
     <button id="btnJoin">进入房间</button>
+    <button id="btnBot" type="button" class="ghost">🤖 加机器人</button>
     <button id="btnLeave" type="button" class="ghost">🚪 退出此对局</button>
+    <button id="btnSkip" type="button" class="ghost" style="display:none">⏭ 跳过本阶段</button>
     <span class="tip2" id="roomTip"></span>
   </div>
   <div class="banner"><span id="banner">未加入房间</span><span class="cd" id="cd"></span></div>
@@ -132,8 +134,8 @@
   (function () {
     var ctx = '${pageContext.request.contextPath}';
     function $(id) { return document.getElementById(id); }
-    function myName() { return (sessionStorage.getItem('visitorName') || '').trim(); }
-    function ensureName() { var n = myName(); if (!n) { n = (prompt('给自己起个名字：', '') || '').trim(); if (n) sessionStorage.setItem('visitorName', n); } return n; }
+    function myName() { return (sessionStorage.getItem('visitorName') || localStorage.getItem('visitorName') || '').trim(); }
+    function ensureName() { var n = myName(); if (!n) { n = (prompt('给自己起个名字：', localStorage.getItem('visitorName') || '') || '').trim(); if (n) { sessionStorage.setItem('visitorName', n); localStorage.setItem('visitorName', n); } } return n; }
 
     var room = { id: '' }, st = null, timer = null, remain = 0;
     function setTip(t) { $('roomTip').textContent = t || ''; }
@@ -147,23 +149,27 @@
       }).catch(function () {});
     }
     function poll() {
-      if (!room.id || !myName()) return;
+      if (!room.id) return;
       fetch(ctx + '/werewolf?id=' + encodeURIComponent(room.id) + '&name=' + encodeURIComponent(myName()))
               .then(function (r) { return r.json(); })
               .then(function (d) { if (d && !d.error) { st = d; render(); } })
               .catch(function () {});
     }
     function joinRoom() {
-      if (!ensureName()) { alert('先取个名字才能进房间'); return; }
+      if (!ensureName()) { alert('需要名字才能进房间'); return; }
       var id = ($('roomId').value || '').trim();
       if (!id) { alert('请输入房间号'); return; }
       room.id = id;
-      post({ action: 'join', preset: $('preset').value }).then(function () { if (!timer) timer = setInterval(poll, 1200); poll(); });
+      try { localStorage.setItem('werewolf_room', id); } catch (e) { }
+      $('banner').textContent = '已进入房间 ' + id + '（' + myName() + '）';
+      post({ action: 'join', preset: $('preset').value });
+      if (!timer) { poll(); timer = setInterval(poll, 1500); } else poll();
       loadRooms();
     }
     function leaveRoom() {
       if (!room.id) return;
       if (timer) { clearInterval(timer); timer = null; }
+      try { localStorage.removeItem('werewolf_room'); } catch (e) { }
       post({ action: 'leave' }).then(function () { room.id = ''; st = null; render(); });
     }
 
@@ -200,8 +206,9 @@
     }
     function render() {
       var bn = $('banner');
-      if (!st || !room.id) { bn.textContent = '未加入房间'; $('seats').innerHTML = ''; $('prompt').innerHTML = ''; $('cd').textContent = ''; $('wolfBox').style.display = 'none'; renderMsgs([]); renderLog([]); return; }
+      if (!st || !room.id) { bn.textContent = '未加入房间'; $('seats').innerHTML = ''; $('prompt').innerHTML = ''; $('cd').textContent = ''; $('wolfBox').style.display = 'none'; $('btnSkip').style.display = 'none'; renderMsgs([]); renderLog([]); return; }
       bn.textContent = st.phaseText + (st.winner ? ' · ' + st.winner + '获胜' : '');
+      $('btnSkip').style.display = (st.am && st.phase >= 1 && st.phase <= 4) ? '' : 'none';
       remain = st.remain / 1000;
       renderPrompt();
       var box = $('seats'); box.innerHTML = '';
@@ -242,13 +249,13 @@
         mkBtn('🤖 加机器人', '', function () { post({ action: 'addbot' }); });
         mkBtn('🤖 一键补满', '', function () { post({ action: 'fillbots' }); });
         mkBtn('✖ 移除机器人', '', function () { post({ action: 'delbot' }); });
-        if (st.owner === myName()) mkBtn('🎬 开始游戏', 'ok', function () { post({ action: 'start' }); });
+        if (st.me) mkBtn('🎬 开始游戏', 'ok', function () { post({ action: 'start' }); });
         pw.appendChild(row);
         $('prompt').innerHTML = ''; $('prompt').appendChild(pw);
       } else if (st.phase === 5) {
         var pw2 = document.createElement('div'); pw2.className = 'prompt';
         var row2 = document.createElement('div'); row2.className = 'chips';
-        if (st.owner === myName()) { var b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'chip ok'; b3.textContent = '🔄 再来一局'; b3.onclick = function () { post({ action: 'restart' }); }; row2.appendChild(b3); }
+        if (st.me) { var b3 = document.createElement('button'); b3.type = 'button'; b3.className = 'chip ok'; b3.textContent = '🔄 再来一局'; b3.onclick = function () { post({ action: 'restart' }); }; row2.appendChild(b3); }
         pw2.appendChild(row2); $('prompt').appendChild(pw2);
       }
     }
@@ -336,6 +343,8 @@
     }
 
     $('btnJoin').onclick = joinRoom;
+    $('btnBot').onclick = function () { post({ action: 'addbot' }); };
+    $('btnSkip').onclick = function () { post({ action: 'adminskip' }); };
     $('btnLeave').onclick = function () {
       leaveRoom();
       var el = $('roomList'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth' });
@@ -359,7 +368,9 @@
       cd.textContent = '⏳ ' + Math.ceil(remain) + ' 秒';
     }, 1000);
 
-    var rp = /[?&]room=([^&]*)/.exec(location.search); if (rp) { try { $('roomId').value = decodeURIComponent(rp[1]); } catch (e) {} }
+    var rp = /[?&]room=([^&]*)/.exec(location.search); if (rp) { try { $('roomId').value = decodeURIComponent(rp[1]); } catch (e) { } }
+    try { if (!$('roomId').value) { var sr = localStorage.getItem('werewolf_room'); if (sr) $('roomId').value = sr; } } catch (e) { }
+    if (($('roomId').value || '').trim() && myName()) joinRoom();
     loadRooms(); setInterval(loadRooms, 5000);
     loadLobby(); setInterval(loadLobby, 3000);
     window.addEventListener('beforeunload', function () {
@@ -368,6 +379,6 @@
   })();
 </script>
 <script src="${pageContext.request.contextPath}/js/presence.js"></script>
-<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=3"></script>
 </body>
 </html>

@@ -451,6 +451,7 @@ public class XiangqiServlet extends HttpServlet {
         sb.append(",\"red\":\"").append(esc(r.red == null ? "" : r.red)).append('"');
         sb.append(",\"black\":\"").append(esc(r.black == null ? "" : r.black)).append('"');
         sb.append(",\"myColor\":").append(viewer.equals(r.red) ? 1 : viewer.equals(r.black) ? 2 : 0);
+        sb.append(",\"undoBy\":\"").append(esc(r.undoReq == null ? "" : r.undoReq)).append('"');
         sb.append(",\"winner\":\"").append(esc(r.winner)).append('"');
         sb.append(",\"last\":[").append(r.lastFrom).append(',').append(r.lastTo).append(']');
         sb.append(",\"board\":[");

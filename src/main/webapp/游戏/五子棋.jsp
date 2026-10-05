@@ -171,12 +171,29 @@
         }
         var anim = null, animRaf = null, prevLast, soundOn = localStorage.getItem('gomoku_sound') !== '0', audioCtx = null;
         function ensureAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+        var noiseBuf = null;
+        function getNoise(ac) {
+            if (noiseBuf) return noiseBuf;
+            var len = Math.max(1, Math.floor(ac.sampleRate * 0.05));
+            noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+            var d = noiseBuf.getChannelData(0);
+            for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+            return noiseBuf;
+        }
         function playPlace() {
             if (!soundOn) return; ensureAudio(); if (!audioCtx) return;
-            var t = audioCtx.currentTime, o = audioCtx.createOscillator(), gain = audioCtx.createGain();
-            o.type = 'triangle'; o.frequency.setValueAtTime(380, t); o.frequency.exponentialRampToValueAtTime(120, t + 0.09);
-            gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(0.5, t + 0.006); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
-            o.connect(gain); gain.connect(audioCtx.destination); o.start(t); o.stop(t + 0.22);
+            var ac = audioCtx, t = ac.currentTime;
+            // ① 棋子落板的"咔"瞬态：白噪声经高通+带通，极快衰减
+            var src = ac.createBufferSource(); src.buffer = getNoise(ac);
+            var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 1.1;
+            var hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700;
+            var ng = ac.createGain(); ng.gain.setValueAtTime(0.7, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+            src.connect(hp); hp.connect(bp); bp.connect(ng); ng.connect(ac.destination); src.start(t); src.stop(t + 0.05);
+            // ② 木质共鸣"嗒"：低频正弦快速下滑 + 短促包络
+            var o = ac.createOscillator(), og = ac.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(210, t); o.frequency.exponentialRampToValueAtTime(120, t + 0.09);
+            og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.55, t + 0.004); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+            o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t + 0.15);
         }
         function startMoveAnim(x, y) { anim = { x: x, y: y, start: performance.now() }; if (!animRaf) tickAnim(); }
         function tickAnim() { animRaf = requestAnimationFrame(function () { if (!anim) { animRaf = null; return; } if (performance.now() - anim.start >= 320) { anim = null; animRaf = null; draw(); return; } draw(); tickAnim(); }); }
@@ -313,6 +330,9 @@
         updateSoundBtn();
         ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio); });
 
+        StickerPicker.attach({ ctx: ctx, toggle: 'lobbySticker', panel: 'lobbyStickerPanel', tabs: 'lobbySpTabs', grid: 'lobbySpGrid', send: sendLobbySticker });
+        StickerPicker.attach({ ctx: ctx, toggle: 'roomSticker', panel: 'roomStickerPanel', tabs: 'roomSpTabs', grid: 'roomSpGrid', send: function (c, f) { if (!room.id) { alert('请先进入房间'); return; } act({ action: 'chat', scat: c, sfile: f }); } });
+
         var rp = /[?&]room=([^&]*)/.exec(location.search); if (rp) { try { $('roomId').value = decodeURIComponent(rp[1]); } catch (e) {} }
         draw();
         loadRooms(); setInterval(loadRooms, 5000);
@@ -323,6 +343,6 @@
     })();
 </script>
 <script src="${pageContext.request.contextPath}/js/presence.js"></script>
-<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=3"></script>
 </body>
 </html>

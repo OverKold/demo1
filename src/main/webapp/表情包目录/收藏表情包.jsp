@@ -37,6 +37,6 @@
         </a>
     </div>
 </div>
-<script src="${pageContext.request.contextPath}/js/music-player.js"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=3"></script>
 </body>
 </html>

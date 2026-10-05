@@ -29,11 +29,19 @@ public class ChatServlet extends HttpServlet {
     private static final Set<String> STICKER_CATS = new HashSet<String>(Arrays.asList(STICKER_CAT_ARR));
     private static final String[] STICKER_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp"};
 
+    private static final Set<String> AVATARS = new HashSet<String>(Arrays.asList(
+            "Mygo/anon.png", "Mygo/soyo.png", "Mygo/tomori.png", "Mygo/riki.png", "Mygo/rana.png",
+            "AveMujica/Saki.jpg", "AveMujica/htn.jpg", "AveMujica/meow.jpg", "AveMujica/mtm.jpg", "AveMujica/tmls.jpg",
+            "MewType/arl.jpg", "MewType/nnk.jpg", "MewType/ricu.jpg", "MewType/tdz.jpg", "MewType/yuno.jpg",
+            "Millsage/hotaru.jpg", "Millsage/houka.jpg", "Millsage/mahoro.jpg", "Millsage/nagi.jpg", "Millsage/natsume.jpg",
+            "一家Dumbrock/chieri.jpg", "一家Dumbrock/miku.jpg", "一家Dumbrock/raika.jpg", "一家Dumbrock/shizuku.jpg", "一家Dumbrock/yomogi.jpg"
+    ));
+
     private static final class Msg {
         final String name, text; final long time;
-        final String sc, sf;
-        Msg(String n, String t, long tm) { this(n, t, tm, null, null); }
-        Msg(String n, String t, long tm, String c, String f) { name = n; text = t; time = tm; sc = c; sf = f; }
+        final String sc, sf, av;
+        Msg(String n, String t, long tm, String a) { this(n, t, tm, null, null, a); }
+        Msg(String n, String t, long tm, String c, String f, String a) { name = n; text = t; time = tm; sc = c; sf = f; av = a; }
     }
 
     @SuppressWarnings("unchecked")
@@ -71,6 +79,7 @@ public class ChatServlet extends HttpServlet {
                 json.append(",\"sc\":\"").append(esc(m.sc))
                         .append("\",\"sf\":\"").append(esc(m.sf)).append('"');
             }
+            if (m.av != null) json.append(",\"av\":\"").append(esc(m.av)).append('"');
             json.append(",\"tms\":").append(m.time).append('}');
         }
         json.append(']');
@@ -96,13 +105,15 @@ public class ChatServlet extends HttpServlet {
             return;
         }
         if (name != null && !name.isEmpty()) {
+            String av = req.getParameter("av");
+            if (av == null || !AVATARS.contains(av)) av = null;
             String scat = req.getParameter("scat");
             String sfile = req.getParameter("sfile");
             if (validSticker(scat, sfile)) {
-                q.addLast(new Msg(name, null, now, scat, sfile));
+                q.addLast(new Msg(name, null, now, scat, sfile, av));
                 while (q.size() > MAX_MSG) q.pollFirst();
             } else if (text != null && !text.isEmpty()) {
-                q.addLast(new Msg(name, text, now));
+                q.addLast(new Msg(name, text, now, av));
                 while (q.size() > MAX_MSG) q.pollFirst();
             }
         }

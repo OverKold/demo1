@@ -3,703 +3,10 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            min-height: 100vh;
-            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(-45deg, #3a3d52, #4a4458, #3f4a5c, #453f52, #3a3d52);
-            background-size: 400% 400%;
-            animation: gradientFlow 22s ease infinite;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        @keyframes gradientFlow {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .float-icon {
-            position: fixed;
-            top: 0;
-            z-index: 0;
-            pointer-events: none;
-            will-change: transform;
-            animation-name: floatUp;
-            animation-timing-function: linear;
-            animation-iteration-count: infinite;
-            filter: saturate(0.85);
-        }
-
-        @keyframes floatUp {
-            0% {
-                transform: translate(0, 110vh) rotate(0deg);
-            }
-            50% {
-                transform: translate(var(--sway, 40px), 45vh) rotate(180deg);
-            }
-            100% {
-                transform: translate(0, -25vh) rotate(360deg);
-            }
-        }
-
-        td:first-child::before {
-            content: "";
-            display: inline-block;
-            width: 46px;
-            height: 46px;
-            margin-right: 14px;
-            vertical-align: middle;
-            background: no-repeat center / contain;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(120, 90, 160, 0.25);
-            transition: transform .35s ease;
-        }
-
-        tr:hover td:first-child::before {
-            transform: scale(1.12) rotate(6deg);
-        }
-
-        #Mygo td:first-child::before {
-            background-image: url('${pageContext.request.contextPath}/Mainimgs/MyGO!!!!!_ON_icon.png');
-        }
-
-        #AveMujica td:first-child::before {
-            background-image: url('${pageContext.request.contextPath}/Mainimgs/AveMujica.png');
-        }
-
-        #MewType td:first-child::before {
-            background-image: url('${pageContext.request.contextPath}/Mainimgs/Mugendai_MewType_ON_icon.webp');
-        }
-
-        #millsage td:first-child::before {
-            background-image: url('${pageContext.request.contextPath}/Mainimgs/Millsage_ON_icon.webp');
-        }
-
-        #一家DumbRock td:first-child::before {
-            background-image: url('${pageContext.request.contextPath}/Mainimgs/Ikka_Dumb_Rock!_ON_icon.png');
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 50px;
-            padding: 60px 0 40px;
-            color: #eceaf4;
-            letter-spacing: 4px;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
-            position: relative;
-            z-index: 1;
-        }
-
-        table {
-            margin: 0 auto 80px;
-            border-collapse: separate;
-            border-spacing: 0 14px;
-            position: relative;
-            z-index: 1;
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 18px;
-            padding: 10px 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.20);
-        }
-
-        td {
-            padding: 18px 34px;
-            color: #e6e4ee;
-            font-size: 18px;
-            transition: all .35s ease;
-        }
-
-        tr {
-            transition: transform .35s ease;
-            cursor: pointer;
-        }
-
-        tr:hover {
-            transform: translateX(10px) scale(1.02);
-        }
-
-        td:first-child {
-            border-radius: 12px 0 0 12px;
-        }
-
-        td:last-child {
-            border-radius: 0 12px 12px 0;
-        }
-
-        a {
-            color: #f0eef7;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all .3s ease;
-        }
-
-        a:hover {
-            opacity: .85;
-            letter-spacing: 1px;
-        }
-
-        #Mygo td {
-            border: 2px solid #6ba3c7;
-            background: rgba(107, 163, 199, 0.12);
-        }
-
-        #AveMujica td {
-            border: 2px solid #b56b6b;
-            background: rgba(181, 107, 107, 0.12);
-        }
-
-        #MewType td {
-            border: 2px solid #d9c86b;
-            background: rgba(217, 200, 107, 0.12);
-        }
-
-        #millsage td {
-            border: 2px solid #b8b8c4;
-            background: rgba(184, 184, 196, 0.10);
-        }
-
-        #一家DumbRock td {
-            border: 2px solid #d99a5b;
-            background: rgba(217, 154, 91, 0.12);
-        }
-
-        .go-collection {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin: 6px 0 70px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .go-collection a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 26px;
-            border-radius: 999px;
-            text-decoration: none;
-            color: #fff;
-            font-weight: 600;
-            font-size: 16px;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, #c2456a, #8f7bd0);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
-            transition: transform .3s ease, box-shadow .3s ease, filter .2s;
-        }
-
-        .go-collection a:hover {
-            transform: translateY(-3px) scale(1.03);
-            box-shadow: 0 14px 32px rgba(0, 0, 0, .36);
-            filter: brightness(1.06);
-        }
-
-        .go-collection a:active {
-            transform: scale(.97);
-        }
-
-        /* 面板通用（在线 + 聊天） */
-        .online-panel, .chat-panel {
-            position: fixed;
-            z-index: 6;
-            max-width: 90vw;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 14px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-            color: #eceaf4;
-            font-size: 14px;
-            overflow: hidden;
-        }
-
-        .online-panel { top: 18px; right: 18px; width: 200px; }
-        .online-body { height: 220px; }
-
-        .chat-panel { left: 18px; bottom: 18px; width: 340px; }
-        .chat-msgs { height: 260px; }
-        .sticker-panel { max-height: 240px; }
-
-        .online-head, .chat-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            cursor: pointer;
-            user-select: none;
-            font-weight: 600;
-            letter-spacing: 1px;
-            background: rgba(255, 255, 255, 0.06);
-        }
-
-        .online-head .toggle, .chat-head .toggle {
-            font-size: 13px;
-            opacity: .8;
-        }
-
-        .online-body, .chat-msgs {
-            height: 220px;
-            overflow: auto;
-            padding: 10px 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .online-body .empty, .chat-msgs .empty {
-            color: #b7b4c6;
-            text-align: center;
-            margin-top: 90px;
-        }
-
-        .online-body .name {
-            display: flex;
-            align-items: center;
-        }
-
-        .online-body .name.me {
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .online-body .name .dot {
-            width: 12px;
-            height: 12px;
-            margin-right: 8px;
-            background: #8fc0e0;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-
-        .online-panel.collapsed .online-body, .chat-panel.collapsed .chat-body {
-            display: none;
-        }
-
-        /* 名字/密码输入 */
-        .name-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .name-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 14px;
-            padding: 24px 32px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
-            color: #eceaf4;
-            font-size: 14px;
-            width: 340px;
-            max-width: 90vw;
-        }
-
-        .name-card h2 {
-            font-size: 24px;
-            margin-bottom: 12px;
-        }
-
-        .name-card p {
-            margin-bottom: 12px;
-        }
-
-        .name-card input {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            outline: none;
-            margin-bottom: 10px;
-        }
-
-        .name-card input:focus {
-            border-color: #6ba3c7;
-        }
-
-        .name-card .hint {
-            font-size: 12px;
-            color: #b7b4c6;
-            margin: 0 0 4px;
-        }
-
-        .name-card button {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #6ba3c7, #8f7bd0);
-        }
-
-        .name-card button:hover {
-            filter: brightness(1.08);
-        }
-
-        .name-card button:active {
-            transform: scale(.97);
-        }
-
-        /* 聊天 */
-        .chat-msg {
-            line-height: 1.4;
-            word-break: break-word;
-        }
-
-        .chat-msg .meta {
-            font-size: 12px;
-            opacity: .7;
-            margin-right: 6px;
-        }
-
-        .chat-msg .who {
-            font-weight: 600;
-            color: #8fc0e0;
-            margin-right: 4px;
-        }
-
-        .chat-msg.me .who {
-            color: #f0c674;
-        }
-
-        .chat-input {
-            display: flex;
-            gap: 8px;
-            padding: 10px 12px;
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 9px 12px;
-            font-size: 14px;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            outline: none;
-        }
-
-        .chat-input input:focus {
-            border-color: #6ba3c7;
-        }
-
-        .chat-input button {
-            padding: 0 16px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #6ba3c7, #8f7bd0);
-        }
-
-        /* 聊天表情气泡：统一尺寸，方框内 contain 显示 */
-        .chat-msg .stk { display: inline-block; vertical-align: middle; margin: 2px 0; }
-        .chat-msg .stk img {
-            width: 90px; height: 90px; object-fit: contain;
-            border-radius: 8px; background: rgba(0, 0, 0, .18);
-        }
-
-        /* 表情选择面板：紧凑网格，固定高度，内部滚动 */
-        .sticker-panel {
-            display: none;
-            height: 190px;
-            flex-direction: column;
-            border-top: 1px solid rgba(255, 255, 255, .12);
-        }
-        .sp-tabs { flex: 0 0 auto; display: flex; gap: 6px; padding: 8px 10px 4px; flex-wrap: wrap; }
-        .sp-tab { padding: 3px 10px; font-size: 12px; border-radius: 999px; cursor: pointer; color: #cfcbe0; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .10); }
-        .sp-tab.on { color: #fff; background: linear-gradient(135deg, #6ba3c7, #8f7bd0); border-color: transparent; }
-        .sp-grid { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; padding: 6px 10px 10px; overflow: auto; align-content: start; }
-        .sp-grid img { width: 100%; height: 52px; object-fit: contain; border-radius: 6px; cursor: pointer; background: rgba(0, 0, 0, .18); transition: transform .15s; }
-        .sp-grid img:hover { transform: scale(1.1); }
-        .sp-empty { grid-column: 1 / -1; text-align: center; color: #b7b4c6; font-size: 13px; padding: 12px 0; }
-        #stickerToggle { padding: 0 10px; font-size: 18px; background: rgba(255, 255, 255, .12); }
-        #stickerToggle:hover { background: rgba(255, 255, 255, .22); }
-
-        /* 聊天区加高，给表情面板留出空间 */
-        .chat-msgs { height: 260px; }
-
-        /* ===== 手机端适配 ===== */
-        @media (max-width: 640px) {
-            h1 { font-size: 30px; padding: 34px 0 22px; letter-spacing: 2px; }
-            table { padding: 4px 10px; margin-bottom: 46px; }
-            td { padding: 14px; font-size: 15px; }
-            td:first-child::before { width: 34px; height: 34px; margin-right: 10px; }
-            .go-collection { margin-bottom: 40px; }
-            .go-collection a { padding: 10px 20px; font-size: 15px; }
-
-            .online-panel { top: 12px; right: 12px; width: 44vw; max-width: 190px; }
-            .online-body { height: 150px; }
-
-            .chat-panel { left: 10px; right: 10px; bottom: 10px; width: auto; }
-            .chat-msgs { height: 240px; max-height: 34vh; }
-            .sticker-panel { max-height: 32vh; }
-
-            /* 输入框 16px 防止 iOS 聚焦时自动放大页面 */
-            .chat-input input, .name-card input { font-size: 16px; }
-
-            .name-card { padding: 20px 18px; }
-            .admin-card { max-height: 86vh; }
-            .admin-btn, .logout-btn { padding: 8px 12px; font-size: 13px; }
-        }
-
-        /* 管理员 */
-        .admin-btn {
-            position: fixed;
-            top: 18px;
-            left: 18px;
-            z-index: 7;
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 9px 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            background: linear-gradient(135deg, #c2456a, #8f7bd0);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .logout-btn {
-            position: fixed;
-            bottom: 18px;
-            right: 18px;
-            z-index: 7;
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 9px 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #eceaf4;
-            background: rgba(255, 255, 255, 0.14);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.24);
-        }
-
-        .login-btn {
-            position: fixed;
-            bottom: 18px;
-            right: 18px;
-            z-index: 7;
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 9px 15px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-            background: linear-gradient(135deg, #6ba3c7, #8f7bd0);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-        }
-
-        .login-btn:hover {
-            filter: brightness(1.08);
-        }
-
-        /* 音乐悬浮按钮：主页右下角有登录/注销按钮，抬高到其正上方避免重叠（仅本页生效） */
-        #bgm { bottom: 70px !important; }
-        @media (max-width: 640px) {
-            #bgm { bottom: 64px !important; right: 12px !important; }
-        }
-
-        .admin-login-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 16;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-        }
-
-        .admin-login-overlay.show {
-            display: flex;
-        }
-
-        .name-card .ghost {
-            margin-top: 8px;
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .admin-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 15;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-        }
-
-        .admin-card {
-            width: 600px;
-            max-width: 94vw;
-            max-height: 82vh;
-            display: flex;
-            flex-direction: column;
-            background: rgba(40, 38, 54, 0.96);
-            border-radius: 16px;
-            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-            color: #eceaf4;
-            overflow: hidden;
-        }
-
-        .admin-card .ac-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.06);
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .admin-card .ac-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .admin-card .ac-actions button {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .ap-cols {
-            display: flex;
-            gap: 12px;
-            padding: 10px 16px 4px;
-            font-size: 12px;
-            color: #b7b4c6;
-        }
-
-        .ap-list {
-            padding: 6px 16px 16px;
-            overflow: auto;
-        }
-
-        .ap-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .ap-name {
-            font-weight: 600;
-            min-width: 96px;
-        }
-
-        .ap-page {
-            flex: 1;
-            color: #8fc0e0;
-        }
-
-        .ap-time {
-            color: #b7b4c6;
-            font-size: 12px;
-            min-width: 52px;
-            text-align: right;
-        }
-
-        .ap-mute {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
-            background: #c2456a;
-        }
-
-        .ap-mute.on {
-            background: #5a8f5a;
-        }
-
-        .ap-empty {
-            text-align: center;
-            color: #b7b4c6;
-            padding: 30px 0;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            body {
-                animation: none;
-            }
-
-            .float-icon {
-                display: none;
-            }
-
-            .online-body .name .dot {
-                animation: none;
-            }
-        }
-    </style>
+    <style></style>
     <title>角色介绍</title>
     <link rel="icon" type="image/x-icon" href="${pageContext.request.contextPath}/Titleico/Bangdream.png">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css">
 </head>
 <body>
 <div class="name-overlay" id="nameOverlay">
@@ -715,7 +22,7 @@
 <div class="online-panel" id="onlinePanel">
     <div class="online-head" id="onlineHead">
         <span>🟢 在线 <span id="onlineCount">0</span> 人</span>
-        <span class="toggle">收起</span>
+        <span class="head-actions"><button id="renameBtn" type="button" title="改名">✏️ 改名</button><span class="toggle">收起</span></span>
     </div>
     <div class="online-body" id="onlineBody">
         <div class="empty">加载中…</div>
@@ -735,7 +42,9 @@
             <div class="sp-tabs" id="spTabs"></div>
             <div class="sp-grid" id="spGrid"><div class="sp-empty">加载中…</div></div>
         </div>
+        <div class="avatar-panel" id="avatarPanel" style="display:none"></div>
         <div class="chat-input">
+            <button id="avatarToggle" type="button" title="换头像"><img id="avatarBtnImg" class="avatar-mini" alt="" style="display:none"><span id="avatarBtnEmoji">🙂</span></button>
             <button id="stickerToggle" type="button" title="发表情">😊</button>
             <input id="chatInput" type="text" maxlength="200" placeholder="说点什么…" autocomplete="off">
             <button id="chatSend">发送</button>
@@ -803,11 +112,25 @@
 
 <div class="go-collection">
     <a href="${pageContext.request.contextPath}/表情包目录/收藏表情包.jsp">🎨 去表情包收藏</a>
-    <a href="${pageContext.request.contextPath}/游戏/斗地主.jsp">🎮 去斗地主</a>
-    <a href="${pageContext.request.contextPath}/游戏/五子棋.jsp">⚫ 去五子棋</a>
-    <a href="${pageContext.request.contextPath}/游戏/象棋.jsp">🐉 去象棋</a>
-    <a href="${pageContext.request.contextPath}/游戏/狼人杀.jsp">🐺 去狼人杀</a>
+    <div class="game-menu" id="gameMenu">
+        <button type="button" class="game-menu-btn" id="gameMenuBtn">🎮 游戏 <span class="gm-arrow">▾</span></button>
+        <div class="game-menu-list" id="gameMenuList">
+            <a href="${pageContext.request.contextPath}/游戏/斗地主.jsp">🎮 斗地主</a>
+            <a href="${pageContext.request.contextPath}/游戏/五子棋.jsp">⚫ 五子棋</a>
+            <a href="${pageContext.request.contextPath}/游戏/象棋.jsp">🐉 象棋</a>
+            <a href="${pageContext.request.contextPath}/游戏/狼人杀.jsp">🐺 狼人杀</a>
+        </div>
+    </div>
 </div>
+<script>
+    (function () {
+        var menu = document.getElementById('gameMenu'), btn = document.getElementById('gameMenuBtn');
+        if (!menu || !btn) return;
+        btn.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open'); });
+        document.addEventListener('click', function (e) { if (!menu.contains(e.target)) menu.classList.remove('open'); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') menu.classList.remove('open'); });
+    })();
+</script>
 
 <style>
     .cl-wrap { max-width: 720px; margin: 26px auto 40px; padding: 18px 22px; border-radius: 16px;
@@ -979,7 +302,7 @@
         var pwInput = document.getElementById('pwInput');
         var adLoginBtn = document.getElementById('adminLoginBtn');
         var adCancelBtn = document.getElementById('adminLoginCancel');
-        var myName = sessionStorage.getItem('visitorName') || '';
+        var myName = sessionStorage.getItem('visitorName') || localStorage.getItem('visitorName') || '';
         var timer = null;
 
         head.addEventListener('click', function () {
@@ -1047,6 +370,7 @@
         function doEnter(name) {
             myName = name;
             sessionStorage.setItem('visitorName', name);
+            localStorage.setItem('visitorName', name);
             overlay.style.display = 'none';
             beat();
             if (timer) clearInterval(timer);
@@ -1142,6 +466,18 @@
                 if (!timer) timer = setInterval(beat, 10000);
             }
         });
+
+        // 改名：清除持久化昵称并重新弹出输入框
+        var renameBtn = document.getElementById('renameBtn');
+        function rename() {
+            if (timer) { clearInterval(timer); timer = null; }
+            try { sessionStorage.removeItem('visitorName'); localStorage.removeItem('visitorName'); } catch (e) { }
+            myName = '';
+            nameInput.value = '';
+            overlay.style.display = 'flex';
+            setTimeout(function () { nameInput.focus(); }, 50);
+        }
+        if (renameBtn) renameBtn.addEventListener('click', function (e) { e.stopPropagation(); rename(); });
 
         if (myName) doEnter(myName);
         else {
@@ -1288,6 +624,13 @@
             list.forEach(function (m) {
                 var line = document.createElement('div');
                 line.className = 'chat-msg' + (m.n === myName ? ' me' : '');
+                if (m.av) {
+                    var av = document.createElement('img');
+                    av.className = 'avatar';
+                    av.src = ctx + '/BangDreamsimg/' + m.av.split('/').map(encodeURIComponent).join('/');
+                    av.alt = ''; av.title = m.n; av.loading = 'lazy';
+                    line.appendChild(av);
+                }
                 var meta = document.createElement('span');
                 meta.className = 'meta';
                 meta.textContent = fmt(m.tms);
@@ -1326,6 +669,7 @@
             var body = new URLSearchParams();
             body.set('name', name);
             body.set('text', text);
+            var a = curAvatar(); if (a) body.set('av', a);
             fetch(ctx + '/chat', {method: 'POST', body: body}).then(function (r) {
                 if (r.status === 403) alert('你已被管理员禁言，无法发言');
                 return r;
@@ -1409,10 +753,54 @@
 
         stToggle.addEventListener('click', openStickers);
 
+        var AKEY = 'visitorAvatar';
+        var avatarPanel = document.getElementById('avatarPanel');
+        var avatarToggle = document.getElementById('avatarToggle');
+        var avatarBtnImg = document.getElementById('avatarBtnImg');
+        var avatarBtnEmoji = document.getElementById('avatarBtnEmoji');
+        var AVATAR_GROUPS = {
+            'MyGO!!!!!': ['Mygo/anon.png', 'Mygo/soyo.png', 'Mygo/tomori.png', 'Mygo/riki.png', 'Mygo/rana.png'],
+            'Ave Mujica': ['AveMujica/Saki.jpg', 'AveMujica/htn.jpg', 'AveMujica/meow.jpg', 'AveMujica/mtm.jpg', 'AveMujica/tmls.jpg'],
+            'Mew Type': ['MewType/arl.jpg', 'MewType/nnk.jpg', 'MewType/ricu.jpg', 'MewType/tdz.jpg', 'MewType/yuno.jpg'],
+            'Millsage': ['Millsage/hotaru.jpg', 'Millsage/houka.jpg', 'Millsage/mahoro.jpg', 'Millsage/nagi.jpg', 'Millsage/natsume.jpg'],
+            '一家DumbRock': ['一家Dumbrock/chieri.jpg', '一家Dumbrock/miku.jpg', '一家Dumbrock/raika.jpg', '一家Dumbrock/shizuku.jpg', '一家Dumbrock/yomogi.jpg']
+        };
+        function curAvatar() { try { return localStorage.getItem(AKEY) || ''; } catch (e) { return ''; } }
+        function avUrl(p) { return ctx + '/BangDreamsimg/' + p.split('/').map(encodeURIComponent).join('/'); }
+        function buildAvatarPanel() {
+            avatarPanel.innerHTML = '';
+            var sel = curAvatar();
+            Object.keys(AVATAR_GROUPS).forEach(function (g) {
+                var t = document.createElement('div'); t.className = 'avatar-group-title'; t.textContent = g; avatarPanel.appendChild(t);
+                var row = document.createElement('div'); row.className = 'avatar-row';
+                AVATAR_GROUPS[g].forEach(function (p) {
+                    var b = document.createElement('button'); b.type = 'button'; b.className = 'avatar-cell' + (p === sel ? ' on' : '');
+                    var im = document.createElement('img'); im.src = avUrl(p); im.alt = p; im.loading = 'lazy';
+                    b.appendChild(im);
+                    b.onclick = function () {
+                        try { localStorage.setItem(AKEY, p); } catch (e) {}
+                        var cells = avatarPanel.querySelectorAll('.avatar-cell');
+                        for (var i = 0; i < cells.length; i++) cells[i].classList.remove('on');
+                        b.classList.add('on');
+                        refreshAvatarBtn();
+                    };
+                    row.appendChild(b);
+                });
+                avatarPanel.appendChild(row);
+            });
+        }
+        avatarToggle.addEventListener('click', function () {
+            var hidden = (avatarPanel.style.display === 'none' || avatarPanel.style.display === '');
+            stPanel.style.display = 'none';
+            avatarPanel.style.display = hidden ? 'flex' : 'none';
+            if (hidden) buildAvatarPanel();
+        });
+        refreshAvatarBtn();
+
         pull();
         setInterval(pull, 4000);
     })();
 </script>
-<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
+
 </body>
 </html>

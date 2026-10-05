@@ -167,12 +167,29 @@
 
     var anim = null, animRaf = null, prevLast, soundOn = localStorage.getItem('xiangqi_sound') !== '0', audioCtx = null;
     function ensureAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+    var noiseBuf = null;
+    function getNoise(ac) {
+      if (noiseBuf) return noiseBuf;
+      var len = Math.max(1, Math.floor(ac.sampleRate * 0.05));
+      noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.2);
+      return noiseBuf;
+    }
     function playPlace() {
       if (!soundOn) return; ensureAudio(); if (!audioCtx) return;
-      var t = audioCtx.currentTime, o = audioCtx.createOscillator(), gain = audioCtx.createGain();
-      o.type = 'triangle'; o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.1);
-      gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(0.55, t + 0.006); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-      o.connect(gain); gain.connect(audioCtx.destination); o.start(t); o.stop(t + 0.24);
+      var ac = audioCtx, t = ac.currentTime;
+      // ① 棋子敲板的"咔哒"瞬态：白噪声经高通+带通，极快衰减
+      var src = ac.createBufferSource(); src.buffer = getNoise(ac);
+      var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1900; bp.Q.value = 1.2;
+      var hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500;
+      var ng = ac.createGain(); ng.gain.setValueAtTime(0.75, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      src.connect(hp); hp.connect(bp); bp.connect(ng); ng.connect(ac.destination); src.start(t); src.stop(t + 0.055);
+      // ② 厚木共鸣"嗒"：低频正弦下滑 + 短包络（象棋子更闷一点）
+      var o = ac.createOscillator(), og = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(165, t); o.frequency.exponentialRampToValueAtTime(88, t + 0.1);
+      og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.6, t + 0.004); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t + 0.17);
     }
     function startMoveAnim(from, to, code) { anim = { from: from, to: to, code: code, start: performance.now() }; if (!animRaf) tickAnim(); }
     function tickAnim() { animRaf = requestAnimationFrame(function () { if (!anim) { animRaf = null; return; } if (performance.now() - anim.start >= 300) { anim = null; animRaf = null; draw(); return; } draw(); tickAnim(); }); }
@@ -354,6 +371,9 @@
     updateSoundBtn();
     ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio); });
 
+    StickerPicker.attach({ ctx: ctx, toggle: 'lobbySticker', panel: 'lobbyStickerPanel', tabs: 'lobbySpTabs', grid: 'lobbySpGrid', send: sendLobbySticker });
+    StickerPicker.attach({ ctx: ctx, toggle: 'roomSticker', panel: 'roomStickerPanel', tabs: 'roomSpTabs', grid: 'roomSpGrid', send: function (c, f) { if (!room.id) { alert('请先进入房间'); return; } act({ action: 'chat', scat: c, sfile: f }); } });
+
     var rp = /[?&]room=([^&]*)/.exec(location.search); if (rp) { try { $('roomId').value = decodeURIComponent(rp[1]); } catch (e) {} }
     draw();
     loadRooms(); setInterval(loadRooms, 5000);
@@ -364,6 +384,6 @@
   })();
 </script>
 <script src="${pageContext.request.contextPath}/js/presence.js"></script>
-<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=3"></script>
 </body>
 </html>
