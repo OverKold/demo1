@@ -804,6 +804,9 @@
 <div class="go-collection">
     <a href="${pageContext.request.contextPath}/表情包目录/收藏表情包.jsp">🎨 去表情包收藏</a>
     <a href="${pageContext.request.contextPath}/游戏/斗地主.jsp">🎮 去斗地主</a>
+    <a href="${pageContext.request.contextPath}/游戏/五子棋.jsp">⚫ 去五子棋</a>
+    <a href="${pageContext.request.contextPath}/游戏/象棋.jsp">🐉 去象棋</a>
+    <a href="${pageContext.request.contextPath}/游戏/狼人杀.jsp">🐺 去狼人杀</a>
 </div>
 
 <style>
@@ -1410,6 +1413,6 @@
         setInterval(pull, 4000);
     })();
 </script>
-<script src="${pageContext.request.contextPath}/js/music-player.js"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
 </body>
 </html>

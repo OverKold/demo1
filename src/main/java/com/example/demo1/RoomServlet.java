@@ -200,7 +200,11 @@ public class RoomServlet extends HttpServlet {
 
     // ================= 房间 / 对局 =================
     static final class Member { final String name; volatile long lastSeen; Member(String n) { name = n; lastSeen = System.currentTimeMillis(); } }
-    static final class Msg { final String name, text; final long time; Msg(String n, String t, long tm) { name = n; text = t; time = tm; } }
+    static final class Msg {
+        final String name, text, sc, sf; final long time;
+        Msg(String n, String t, long tm) { this(n, t, null, null, tm); }
+        Msg(String n, String t, String c, String f, long tm) { name = n; text = t; sc = c; sf = f; time = tm; }
+    }
     static final class Seat { String name = null; boolean ai = false; List<Card> hand = new ArrayList<>(); }
     static final class Game {
         final Seat[] seats = {new Seat(), new Seat(), new Seat()};
@@ -400,7 +404,13 @@ public class RoomServlet extends HttpServlet {
                 out = "{\"ok\":true}";
             } else if ("chat".equals(action)) {
                 String text = clean(req.getParameter("text"), MAX_TEXT);
-                if (text != null && !text.isEmpty()) { r.msgs.addLast(new Msg(name, text, System.currentTimeMillis())); while (r.msgs.size() > MAX_MSG) r.msgs.pollFirst(); }
+                String sc = clean(req.getParameter("scat"), 20), sf = clean(req.getParameter("sfile"), 120);
+                if (safeName(sc) && safeName(sf)) {
+                    r.msgs.addLast(new Msg(name, "", sc, sf, System.currentTimeMillis()));
+                } else if (text != null && !text.isEmpty()) {
+                    r.msgs.addLast(new Msg(name, text, System.currentTimeMillis()));
+                }
+                while (r.msgs.size() > MAX_MSG) r.msgs.pollFirst();
                 out = "{\"ok\":true}";
             } else if ("start".equals(action)) {
                 if (g.phase == 0 || g.phase == 3) { if (g.phase == 3) resetSeats(g); startGame(g); out = "{\"ok\":true}"; }
@@ -503,7 +513,7 @@ public class RoomServlet extends HttpServlet {
         for (String n : r.members.keySet()) { if (!first) sb.append(','); first = false; sb.append('"').append(esc(n)).append('"'); }
         sb.append(']');
         sb.append(",\"msg\":["); first = true; long now = System.currentTimeMillis();
-        for (Msg x : r.msgs) { if (now - x.time > MSG_TTL) continue; if (!first) sb.append(','); first = false; sb.append("{\"n\":\"").append(esc(x.name)).append("\",\"t\":\"").append(esc(x.text)).append("\",\"tms\":").append(x.time).append('}'); }
+        for (Msg x : r.msgs) { if (now - x.time > MSG_TTL) continue; if (!first) sb.append(','); first = false; sb.append("{\"n\":\"").append(esc(x.name)).append("\",\"t\":\"").append(esc(x.text)).append('"'); if (x.sf != null) sb.append(",\"sc\":\"").append(esc(x.sc)).append("\",\"sf\":\"").append(esc(x.sf)).append('"'); sb.append(",\"tms\":").append(x.time).append('}'); }
         sb.append(']');
         sb.append('}');
         return sb.toString();
@@ -515,6 +525,9 @@ public class RoomServlet extends HttpServlet {
         resp.setContentType("application/json;charset=UTF-8");
         resp.setHeader("Cache-Control", "no-store");
         PrintWriter out = resp.getWriter(); out.write(json); out.flush();
+    }
+    private static boolean safeName(String s) {
+        return s != null && !s.isEmpty() && s.indexOf('/') < 0 && s.indexOf('\\') < 0 && !s.contains("..");
     }
     private static String clean(String s, int max) {
         if (s == null) return null; s = s.trim(); StringBuilder b = new StringBuilder();

@@ -1,0 +1,369 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>象棋 · 联机房间</title>
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/css/sticker-picker.css">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px 16px 46px; min-height: 100vh; color: #eceaf4; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background: linear-gradient(160deg, #241f31, #2e2a3d 60%, #262233); }
+    h1 { margin: 6px 0 2px; font-size: 26px; text-align: center; }
+    .sub { margin: 0 0 18px; color: #b7b4c6; font-size: 13px; text-align: center; }
+    .lobby { max-width: 980px; margin: 0 auto 16px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); }
+    .mh { margin-bottom: 8px; color: #f0c674; font-size: 13px; }
+    .roomlist { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .rl-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.05); font-size: 14px; }
+    .rl-meta { color: #b7b4c6; font-size: 12px; }
+    .rl-empty { padding: 6px; color: #b7b4c6; font-size: 13px; text-align: center; }
+    .rl-join { padding: 6px 14px; border: none; border-radius: 8px; color: #fff; font-size: 13px; cursor: pointer; background: linear-gradient(135deg,#6ba3c7,#8f7bd0); }
+    .rl-join:disabled { opacity: .45; cursor: not-allowed; }
+    .msgs { height: 150px; overflow: auto; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.18); }
+    .rmsg { margin-bottom: 5px; font-size: 13px; line-height: 1.5; }
+    .rmsg .rw { margin-right: 4px; color: #8fc0e0; font-weight: 600; }
+    .rmsg.me .rw { color: #8fd0a0; }
+    .back { display: inline-block; margin: 6px 0 2px; padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(143,192,224,.4); background: rgba(143,192,224,.14); color: #bfe0f2; font-size: 16px; font-weight: 700; text-decoration: none; }
+    .back:hover { background: rgba(143,192,224,.26); }
+    .rmsg.empty { margin-top: 52px; color: #b7b4c6; text-align: center; }
+    .chatrow { display: flex; gap: 8px; margin-top: 8px; }
+    .chatrow input { flex: 1; padding: 9px 12px; font-size: 14px; color: #fff; border: 2px solid rgba(255,255,255,.15); border-radius: 10px; background: rgba(255,255,255,.08); outline: none; }
+    .chatrow input:focus { border-color: #6ba3c7; }
+    .chatrow button { padding: 0 16px; font-size: 14px; font-weight: 600; color: #fff; border: none; border-radius: 10px; cursor: pointer; background: linear-gradient(135deg,#6ba3c7,#8f7bd0); }
+    .stk-btn { width: 42px; padding: 0; font-size: 18px; }
+    .board-wrap { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
+    #board { flex: 0 0 auto; max-width: 100%; border-radius: 10px; background: #e8c88f; cursor: pointer; touch-action: manipulation; }
+    .side { flex: 1; min-width: 250px; }
+    .status { margin-bottom: 10px; min-height: 20px; font-size: 14px; }
+    .btns { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btns button { padding: 8px 14px; border: none; border-radius: 9px; color: #fff; font-size: 13px; cursor: pointer; background: rgba(255,255,255,.14); }
+    .members { margin: 0 0 12px; padding: 0; list-style: none; font-size: 13px; }
+    .members li { margin-bottom: 4px; padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,.05); }
+    .tip { color: #f0c674; font-size: 13px; align-self: center; }
+    .home { text-align: center; margin: 20px 0 8px; }
+    .home a { color: #8fc0e0; text-decoration: none; font-size: 15px; font-weight: 600; }
+    .home a:hover { color: #bfe0f2; text-decoration: underline; }
+    .ghost { background: rgba(255,255,255,.14) !important; }
+  </style>
+  <script src="${pageContext.request.contextPath}/js/sticker-picker.js"></script>
+</head>
+<body>
+<h1>🐉 象棋 · 联机房间</h1>
+<p class="sub">两位真人入座后自动开局（红先），点棋子再点目标位置走子；被将死或困毙判负。</p>
+
+<div class="lobby">
+  <div class="mh">🔥 进行中的房间（点「进入」直接加入）</div>
+  <ul class="roomlist" id="roomList"><li class="rl-empty">加载中…</li></ul>
+</div>
+
+<div class="lobby">
+  <div class="mh">📣 大厅喊话 · 找人下棋（全服可见，和乐队主页聊天互通）</div>
+  <div class="msgs" id="lobbyMsgs"><div class="rmsg empty">还没有人喊话</div></div>
+  <div class="sticker-panel" id="lobbyStickerPanel">
+    <div class="sp-tabs" id="lobbySpTabs"></div>
+    <div class="sp-grid" id="lobbySpGrid"><div class="sp-empty">加载中…</div></div>
+  </div>
+  <div class="chatrow">
+    <button id="lobbySticker" type="button" class="stk-btn" title="发表情">😊</button>
+    <input id="lobbyInput" type="text" maxlength="200" placeholder="喊话：来个象棋的，房间号 xxx…" autocomplete="off">
+    <button id="lobbySend">发送</button>
+  </div>
+</div>
+
+<div class="lobby">
+  <div class="chatrow">
+    <input id="roomId" type="text" maxlength="32" placeholder="输入房间号，如：a" autocomplete="off">
+    <button id="btnJoin">进入房间</button>
+    <button id="btnBot" type="button" class="ghost">🤖 加机器人</button>
+    <button id="btnLeave" type="button" class="ghost">🚪 退出此对局</button>
+    <span class="tip" id="roomTip"></span>
+  </div>
+  <div class="board-wrap">
+    <canvas id="board" width="476" height="528"></canvas>
+    <div class="side">
+      <div class="mh">对局状态</div>
+      <div class="status" id="status">未加入房间</div>
+      <div class="btns"><button id="btnSound" type="button">🔊 落子声：开</button></div>
+      <div class="btns">
+        <button id="btnUndo" type="button" style="display:none">↩ 悔棋</button>
+        <button id="btnUndoYes" type="button" style="display:none">✅ 同意悔棋</button>
+        <button id="btnUndoNo" type="button" style="display:none">❌ 拒绝</button>
+      </div>
+      <div class="btns">
+        <button id="btnResign" type="button" style="display:none">认输</button>
+        <button id="btnRestart" type="button" style="display:none">重开（换先后手）</button>
+      </div>
+      <div class="mh">房间成员</div>
+      <ul class="members" id="memberList"></ul>
+      <div class="mh">房间聊天</div>
+      <div class="msgs" id="roomMsgs"><div class="rmsg empty">还没有聊天</div></div>
+      <div class="sticker-panel" id="roomStickerPanel">
+        <div class="sp-tabs" id="roomSpTabs"></div>
+        <div class="sp-grid" id="roomSpGrid"><div class="sp-empty">加载中…</div></div>
+      </div>
+      <div class="chatrow">
+        <button id="roomSticker" type="button" class="stk-btn" title="发表情">😊</button>
+        <input id="roomInput" type="text" maxlength="200" placeholder="和房间队友聊天…" autocomplete="off">
+        <button id="roomSend">发送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="home"><a href="${pageContext.request.contextPath}/乐队主页.jsp">← 返回乐队主页</a></div>
+
+<script>
+  (function () {
+    var ctx = '${pageContext.request.contextPath}';
+    var W = 9, H = 10, CELL = 52, PAD = 30;
+    var CH = { rK: '帥', rA: '仕', rE: '相', rR: '車', rM: '馬', rC: '炮', rP: '兵',
+      bK: '將', bA: '士', bE: '象', bR: '車', bM: '馬', bC: '砲', bP: '卒' };
+    function $(id) { return document.getElementById(id); }
+    function myName() { return (sessionStorage.getItem('visitorName') || '').trim(); }
+    function ensureName() { var n = myName(); if (!n) { n = (prompt('给自己起个名字：', '') || '').trim(); if (n) sessionStorage.setItem('visitorName', n); } return n; }
+
+    var room = { id: '' }, last = null, timer = null, sel = -1;
+    function setTip(t) { $('roomTip').textContent = t || ''; }
+    function body() { var b = new URLSearchParams(); b.set('id', room.id); b.set('name', myName()); return b; }
+
+    function joinRoom() {
+      if (!ensureName()) { alert('先取个名字才能进房间'); return; }
+      var id = ($('roomId').value || '').trim();
+      if (!id) { alert('请输入房间号'); return; }
+      room.id = id; sel = -1; prevLast = undefined;
+      if (!timer) { poll(); timer = setInterval(poll, 1500); } else poll();
+      loadRooms();
+    }
+    function leaveRoom() {
+      if (!room.id) return;
+      var b = body(); b.set('action', 'leave');
+      fetch(ctx + '/xiangqi', { method: 'POST', body: b }).then(function () {
+        if (timer) { clearInterval(timer); timer = null; }
+        room.id = ''; last = null; sel = -1; draw();
+        $('memberList').innerHTML = ''; renderMsgs([]);
+        $('status').textContent = '未加入房间';
+        $('btnResign').style.display = 'none'; $('btnRestart').style.display = 'none';
+      }).catch(function () {});
+    }
+    function poll() {
+      if (!room.id || !myName()) return;
+      fetch(ctx + '/xiangqi?id=' + encodeURIComponent(room.id) + '&name=' + encodeURIComponent(myName()))
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d && !d.error) { last = d; render(d); } })
+              .catch(function () {});
+    }
+    function act(o) {
+      if (!room.id) { alert('请先进入房间'); return; }
+      var b = body();
+      Object.keys(o).forEach(function (k) { b.set(k, o[k]); });
+      fetch(ctx + '/xiangqi', { method: 'POST', body: b }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok === false) setTip('⚠ ' + (j.error || '操作失败'));
+        else if (j && j.need) setTip('⏳ 已发送悔棋请求，等待对方同意…');
+        else if (j && j.undone) setTip('↩ 已悔棋');
+        else if (j && j.cancel) setTip('已取消悔棋请求');
+        else setTip('');
+        poll();
+      }).catch(function () {});
+    }
+
+    var anim = null, animRaf = null, prevLast, soundOn = localStorage.getItem('xiangqi_sound') !== '0', audioCtx = null;
+    function ensureAudio() { if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { } } if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
+    function playPlace() {
+      if (!soundOn) return; ensureAudio(); if (!audioCtx) return;
+      var t = audioCtx.currentTime, o = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.1);
+      gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(0.55, t + 0.006); gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      o.connect(gain); gain.connect(audioCtx.destination); o.start(t); o.stop(t + 0.24);
+    }
+    function startMoveAnim(from, to, code) { anim = { from: from, to: to, code: code, start: performance.now() }; if (!animRaf) tickAnim(); }
+    function tickAnim() { animRaf = requestAnimationFrame(function () { if (!anim) { animRaf = null; return; } if (performance.now() - anim.start >= 300) { anim = null; animRaf = null; draw(); return; } draw(); tickAnim(); }); }
+
+    function px(x) { return PAD + x * CELL; }
+    function py(y) { return PAD + y * CELL; }
+    function draw() {
+      var cv = $('board'), g = cv.getContext('2d');
+      g.clearRect(0, 0, cv.width, cv.height);
+      g.strokeStyle = 'rgba(80,50,20,.85)'; g.lineWidth = 1.2;
+      for (var x = 0; x < W; x++) {
+        if (x === 0 || x === W - 1) { g.beginPath(); g.moveTo(px(x) + .5, py(0)); g.lineTo(px(x) + .5, py(H - 1)); g.stroke(); }
+        else {
+          g.beginPath(); g.moveTo(px(x) + .5, py(0)); g.lineTo(px(x) + .5, py(4)); g.stroke();
+          g.beginPath(); g.moveTo(px(x) + .5, py(5)); g.lineTo(px(x) + .5, py(H - 1)); g.stroke();
+        }
+      }
+      for (var y = 0; y < H; y++) { g.beginPath(); g.moveTo(px(0), py(y) + .5); g.lineTo(px(W - 1), py(y) + .5); g.stroke(); }
+      g.beginPath(); g.moveTo(px(3), py(0)); g.lineTo(px(5), py(2)); g.moveTo(px(5), py(0)); g.lineTo(px(3), py(2)); g.stroke();
+      g.beginPath(); g.moveTo(px(3), py(9)); g.lineTo(px(5), py(7)); g.moveTo(px(5), py(9)); g.lineTo(px(3), py(7)); g.stroke();
+      g.fillStyle = 'rgba(80,50,20,.55)'; g.font = '22px "STKaiti","KaiTi",serif';
+      g.fillText('楚 河', px(1) - 6, py(4) + CELL / 2 + 8);
+      g.fillText('漢 界', px(5) + 6, py(4) + CELL / 2 + 8);
+      if (!last) return;
+      var bd = last.board || [], from = last.last ? last.last[0] : -1, to = last.last ? last.last[1] : -1, tx = 0, ty = 0;
+      if (to >= 0) { tx = to % W; ty = Math.floor(to / W); }
+      if (from >= 0) mark(from, g, 'rgba(120,180,220,.5)');
+      if (to >= 0) { g.save(); g.fillStyle = 'rgba(240,198,116,.30)'; g.beginPath(); g.arc(px(tx), py(ty), 24, 0, Math.PI * 2); g.fill(); g.restore(); }
+      var moving = anim && to >= 0 && anim.to === to;
+      for (var i = 0; i < W * H; i++) { if (!bd[i]) continue; if (moving && i === to) continue; piece(g, i % W, Math.floor(i / W), bd[i], i === sel); }
+      if (moving) {
+        var p = (performance.now() - anim.start) / 300; if (p > 1) p = 1;
+        var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+        var fx = anim.from % W, fy = Math.floor(anim.from / W);
+        pieceAt(g, px(fx) + (px(tx) - px(fx)) * e, py(fy) + (py(ty) - py(fy)) * e, bd[to] || anim.code, false);
+      }
+      if (to >= 0) mark(to, g, 'rgba(240,198,116,.95)');
+    }
+    function mark(idx, g, color) {
+      var x = idx % W, y = Math.floor(idx / W);
+      g.save(); g.strokeStyle = color; g.lineWidth = 2;
+      g.beginPath(); g.arc(px(x), py(y), CELL / 2 - 1, 0, Math.PI * 2); g.stroke(); g.restore();
+    }
+    function piece(g, x, y, code, selected) { pieceAt(g, px(x), py(y), code, selected); }
+    function pieceAt(g, cx, cy, code, selected) {
+      var red = code.charAt(0) === 'r';
+      g.beginPath(); g.arc(cx, cy, 22, 0, Math.PI * 2);
+      g.fillStyle = '#f7ecd6'; g.fill();
+      g.lineWidth = selected ? 3 : 2; g.strokeStyle = selected ? '#e05a6a' : (red ? '#b03a3a' : '#3a3a3a'); g.stroke();
+      g.beginPath(); g.arc(cx, cy, 18, 0, Math.PI * 2); g.lineWidth = 1; g.stroke();
+      g.fillStyle = red ? '#b0303a' : '#22222a';
+      g.font = 'bold 24px "STKaiti","KaiTi",serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(CH[code] || code, cx, cy + 1);
+      g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+    }
+    function render(st) {
+      var l = st.last || [-1, -1], to = l[1], key = (to >= 0) ? (l[0] + ',' + to) : '';
+      var code = (to >= 0 && st.board) ? st.board[to] : '';
+      if (prevLast !== undefined && key && key !== prevLast) { startMoveAnim(l[0], to, code); playPlace(); }
+      prevLast = key;
+      draw();
+      var name = myName(), ul = $('memberList'); ul.innerHTML = '';
+      (st.members || []).forEach(function (m) { var li = document.createElement('li'); li.textContent = m + (m === name ? '（你）' : ''); ul.appendChild(li); });
+      renderMsgs(st.msg || []);
+      var red = st.red || '空位（等待入座）', black = st.black || '空位（等待入座）', s;
+      if (st.phase === 0) s = '🔴 红方 ' + red + '　⚫ 黑方 ' + black + (st.red && st.black ? '　—— 红先，走子即开局' : '　—— 还需一位真人入座');
+      else if (st.phase === 1) {
+        s = '轮到 ' + (st.turn === 1 ? '🔴 红方 ' + red : '⚫ 黑方 ' + black) + (st.myColor !== 0 && st.myColor === st.turn ? '（你）' : '');
+        if (st.check && st.myColor === st.turn) s += '　⚠ 将军！';
+      } else s = st.winner ? '🏆 ' + st.winner + ' 获胜！' : '本局结束';
+      $('status').textContent = s;
+      var undoBy = st.undoBy || '';
+      var isP = st.myColor !== 0, hasUndo = (st.phase === 1 || st.phase === 2) && isP;
+      $('btnUndo').style.display = (hasUndo && !undoBy) ? '' : 'none';
+      var oppAsk = undoBy && undoBy !== name;
+      $('btnUndoYes').style.display = (oppAsk && isP) ? '' : 'none';
+      $('btnUndoNo').style.display = (oppAsk || (undoBy && undoBy === name)) ? '' : 'none';
+      $('btnUndoNo').textContent = (undoBy === name) ? '↩ 取消请求' : '❌ 拒绝';
+      if (undoBy === name) $('status').textContent = s + '　⏳ 已向 ' + (st.myColor === 1 ? st.black : st.red) + ' 请求悔棋，等待同意…';
+      else if (oppAsk) $('status').textContent = s + '　⏳ ' + undoBy + ' 想悔棋，是否同意？';
+      $('btnResign').style.display = (st.phase === 1 && st.myColor !== 0) ? '' : 'none';
+      $('btnRestart').style.display = (st.phase === 2 && st.myColor !== 0) ? '' : 'none';
+    }
+    function stkImg(sc, sf) { var i = document.createElement('img'); i.src = ctx + '/QQimgs/' + encodeURIComponent(sc) + '/' + encodeURIComponent(sf); i.alt = sf; i.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; return i; }
+    function fillMsgs(box, list, emptyText) {
+      var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30, my = myName();
+      box.innerHTML = '';
+      if (!list || !list.length) { box.innerHTML = '<div class="rmsg empty">' + emptyText + '</div>'; return; }
+      list.forEach(function (m) {
+        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : '');
+        var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
+        var t = document.createElement('span');
+        if (m.sf) t.appendChild(stkImg(m.sc, m.sf)); else t.textContent = m.t;
+        d.appendChild(w); d.appendChild(t); box.appendChild(d);
+      });
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    }
+    function renderMsgs(list) { fillMsgs($('roomMsgs'), list, '还没有聊天'); }
+
+    $('board').addEventListener('click', function (e) {
+      if (!last || !room.id) return;
+      var cv = $('board'), rect = cv.getBoundingClientRect();
+      var mx = (e.clientX - rect.left) * (cv.width / rect.width);
+      var my = (e.clientY - rect.top) * (cv.height / rect.height);
+      var x = Math.round((mx - PAD) / CELL), y = Math.round((my - PAD) / CELL);
+      if (x < 0 || y < 0 || x >= W || y >= H) return;
+      var idx = y * W + x, code = (last.board || [])[idx] || '';
+      var mine = last.myColor, turn = last.turn;
+      if (sel < 0) {
+        if (!code) return;
+        if (last.phase === 2) return;
+        if (mine === 0) { setTip('观战中，不能走子'); return; }
+        if (last.phase === 1 && turn !== mine) { setTip('还没轮到你'); return; }
+        if ((mine === 1 ? 'r' : 'b') !== code.charAt(0)) return;
+        sel = idx; draw();
+        return;
+      }
+      if (idx === sel) { sel = -1; draw(); return; }
+      var from = sel; sel = -1;
+      act({ action: 'move', fx: from % W, fy: Math.floor(from / W), tx: x, ty: y });
+    });
+
+    function loadRooms() {
+      fetch(ctx + '/xiangqi?list=1').then(function (r) { return r.json(); }).then(function (list) {
+        var ul = $('roomList'); ul.innerHTML = '';
+        if (!list || !list.length) { ul.innerHTML = '<li class="rl-empty">暂无房间，输入房间号即可开一个</li>'; return; }
+        list.forEach(function (rm) {
+          var li = document.createElement('li'); li.className = 'rl-item';
+          var info = document.createElement('span');
+          var b = document.createElement('b'); b.textContent = rm.id;
+          var meta = document.createElement('span'); meta.className = 'rl-meta';
+          var ph = rm.phase === 1 ? '对局中' : rm.phase === 2 ? '已结束' : '等待入座';
+          meta.textContent = ' ' + ph + ' · ' + ((rm.players && rm.players.length) ? rm.players.join('、') : rm.members + ' 人');
+          info.appendChild(b); info.appendChild(meta); li.appendChild(info);
+          var btn = document.createElement('button'); btn.className = 'rl-join';
+          if (rm.canJoin) { btn.textContent = '进入'; btn.onclick = function () { $('roomId').value = rm.id; joinRoom(); }; }
+          else { btn.textContent = '满/进行中'; btn.disabled = true; }
+          li.appendChild(btn); ul.appendChild(li);
+        });
+      }).catch(function () {});
+    }
+
+    function loadLobby() { fetch(ctx + '/chat').then(function (r) { return r.json(); }).then(function (l) { fillMsgs($('lobbyMsgs'), l, '还没有人喊话'); }).catch(function () {}); }
+    function sendLobby() {
+      var n = ensureName(); if (!n) { alert('先取个名字才能喊话'); return; }
+      var inp = $('lobbyInput'), text = (inp.value || '').trim(); if (!text) return;
+      var b = new URLSearchParams(); b.set('name', n); b.set('text', text);
+      fetch(ctx + '/chat', { method: 'POST', body: b }).then(function () { inp.value = ''; loadLobby(); }).catch(function () {});
+    }
+    function sendLobbySticker(cat, file) {
+      var n = ensureName(); if (!n) { alert('先取个名字才能发表情'); return; }
+      var b = new URLSearchParams(); b.set('name', n); b.set('scat', cat); b.set('sfile', file);
+      fetch(ctx + '/chat', { method: 'POST', body: b }).then(loadLobby).catch(function () {});
+    }
+
+    $('btnJoin').onclick = joinRoom;
+    $('btnBot').onclick = function () { act({ action: 'addbot' }); };
+    $('btnLeave').onclick = function () {
+        leaveRoom();
+        var el = $('roomList'); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth' });
+    };
+    $('btnResign').onclick = function () { if (confirm('确定认输？')) act({ action: 'resign' }); };
+    $('btnRestart').onclick = function () { act({ action: 'restart' }); };
+    $('btnUndo').onclick = function () { act({ action: 'undo' }); };
+    $('btnUndoYes').onclick = function () { act({ action: 'undoYes' }); };
+    $('btnUndoNo').onclick = function () { act({ action: 'undoNo' }); };
+    $('roomSend').onclick = function () {
+      if (!room.id) { alert('请先进入房间'); return; }
+      var i = $('roomInput'), t = (i.value || '').trim(); if (!t) return;
+      act({ action: 'chat', text: t }); i.value = '';
+    };
+    $('roomInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('roomSend').onclick(); });
+    $('lobbySend').onclick = sendLobby;
+    $('lobbyInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendLobby(); });
+
+    function updateSoundBtn() { var b = $('btnSound'); if (b) b.textContent = soundOn ? '🔊 落子声：开' : '🔇 落子声：关'; }
+    $('btnSound').onclick = function () { soundOn = !soundOn; localStorage.setItem('xiangqi_sound', soundOn ? '1' : '0'); updateSoundBtn(); if (soundOn) { ensureAudio(); playPlace(); } };
+    updateSoundBtn();
+    ['pointerdown', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio); });
+
+    var rp = /[?&]room=([^&]*)/.exec(location.search); if (rp) { try { $('roomId').value = decodeURIComponent(rp[1]); } catch (e) {} }
+    draw();
+    loadRooms(); setInterval(loadRooms, 5000);
+    loadLobby(); setInterval(loadLobby, 3000);
+    window.addEventListener('beforeunload', function () {
+      if (room.id && myName()) { try { var b = body(); b.set('action', 'leave'); fetch(ctx + '/xiangqi', { method: 'POST', body: b, keepalive: true }); } catch (e) {} }
+    });
+  })();
+</script>
+<script src="${pageContext.request.contextPath}/js/presence.js"></script>
+<script src="${pageContext.request.contextPath}/js/music-player.js?v=2"></script>
+</body>
+</html>

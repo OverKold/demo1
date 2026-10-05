@@ -110,7 +110,11 @@
     <div class="members"><div class="mh">房间成员</div><ul id="memberList"></ul></div>
     <div class="chat">
       <div class="msgs" id="roomMsgs"><div class="rmsg empty">还没有聊天</div></div>
-      <div class="chatrow"><input id="roomInput" type="text" maxlength="200" placeholder="和房间队友聊天…" autocomplete="off"><button id="roomSend">发送</button></div>
+      <div class="sticker-panel" id="roomStickerPanel">
+        <div class="sp-tabs" id="roomSpTabs"></div>
+        <div class="sp-grid" id="roomSpGrid"><div class="sp-empty">加载中…</div></div>
+      </div>
+      <div class="chatrow"><button id="roomSticker" type="button" class="stk-btn" title="发表情">😊</button><input id="roomInput" type="text" maxlength="200" placeholder="和房间队友聊天…" autocomplete="off"><button id="roomSend">发送</button></div>
     </div>
   </div>
 
@@ -136,6 +140,7 @@
 <div class="result" id="result"></div>
 <div class="home"><a href="${pageContext.request.contextPath}/乐队主页.jsp">← 返回乐队主页</a></div>
 
+<script src="${pageContext.request.contextPath}/js/sticker-picker.js"></script>
 <script>
   (function () {
     var ctx = '${pageContext.request.contextPath}';
@@ -306,7 +311,14 @@
     function renderMsgs(list, myN) {
       var box = $('roomMsgs'); var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30; box.innerHTML = '';
       if (!list.length) { box.innerHTML = '<div class="rmsg empty">还没有聊天</div>'; return; }
-      list.forEach(function (m) { var d = document.createElement('div'); d.className = 'rmsg' + (m.n === myN ? ' me' : ''); var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：'; var t = document.createElement('span'); t.textContent = m.t; d.appendChild(w); d.appendChild(t); box.appendChild(d); });
+      list.forEach(function (m) {
+        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === myN ? ' me' : '');
+        var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
+        var t = document.createElement('span');
+        if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; t.appendChild(img); }
+        else t.textContent = m.t;
+        d.appendChild(w); d.appendChild(t); box.appendChild(d);
+      });
       if (atBottom) box.scrollTop = box.scrollHeight;
     }
     function showControls(st) {
@@ -400,6 +412,10 @@
     loadRooms(); setInterval(loadRooms, 5000);
     loadLobbyChat(); setInterval(loadLobbyChat, 3000);
     fetch(ctx + '/chat?stickers=1').then(function (r) { return r.json(); }).then(function (d) { var arr = (d && d['熊喵喵']) || []; pandaList = arr.map(function (x) { return x.n; }); buildCardBgs(pandaList); }).catch(function () {});
+    StickerPicker.attach({
+      ctx: ctx, toggle: 'roomSticker', panel: 'roomStickerPanel', tabs: 'roomSpTabs', grid: 'roomSpGrid',
+      send: function (cat, file) { if (!room.id) { alert('请先进入房间'); return; } act({ action: 'chat', scat: cat, sfile: file }); }
+    });
 
   })();
 </script>
