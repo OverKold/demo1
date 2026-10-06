@@ -66,6 +66,7 @@
     .wolf { background: rgba(194,69,106,.16) !important; border: 1px solid rgba(194,69,106,.45) !important; }
   </style>
   <script src="${pageContext.request.contextPath}/js/sticker-picker.js"></script>
+  <script src="${pageContext.request.contextPath}/js/bdav.js"></script>
 </head>
 <body>
 <h1>🐺 狼人杀 · 联机房间</h1>
@@ -220,7 +221,7 @@
         var rl = document.createElement('div'); rl.className = 'rl'; rl.textContent = p.role || (p.alive ? '·' : '已出局');
         var stt = document.createElement('div'); stt.className = 'st';
         stt.textContent = st.phase === 0 ? (p.ready ? '已准备' : '未准备') : (p.alive ? '存活' : '出局');
-        d.appendChild(no); d.appendChild(nm); d.appendChild(rl); d.appendChild(stt); box.appendChild(d);
+        d.appendChild(no); var avb = BDAv.badge(p.name, 34); avb.style.margin = '4px 0'; d.appendChild(avb); d.appendChild(nm); d.appendChild(rl); d.appendChild(stt); box.appendChild(d);
       });
       // 我的身份 + 验人记录
       if (st.me) {
@@ -264,12 +265,13 @@
         box.innerHTML = '';
         if (!list || !list.length) { box.innerHTML = '<div class="rmsg empty">还没有聊天</div>'; return; }
         list.forEach(function (m) {
-            var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : '');
+            var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : ''); d.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+            d.appendChild(BDAv.badge(m.n, 26));
             var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
             var t = document.createElement('span');
-            if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; t.appendChild(img); }
+            if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;display:block;margin-top:2px;border-radius:6px'; t.appendChild(img); }
             else t.textContent = m.t;
-            d.appendChild(w); d.appendChild(t); box.appendChild(d);
+            var bd = document.createElement('span'); bd.style.cssText = 'min-width:0'; bd.appendChild(w); bd.appendChild(t); d.appendChild(bd); box.appendChild(d);
         });
         if (atBottom) box.scrollTop = box.scrollHeight;
     }
@@ -278,12 +280,13 @@
         box.innerHTML = '';
         if (!list || !list.length) { box.innerHTML = '<div class="rmsg empty">' + emptyText + '</div>'; return; }
         list.forEach(function (m) {
-            var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : '');
+            var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : ''); d.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+            d.appendChild(BDAv.badge(m.n, 26));
             var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
             var t = document.createElement('span');
-            if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; t.appendChild(img); }
+            if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;display:block;margin-top:2px;border-radius:6px'; t.appendChild(img); }
             else t.textContent = m.t;
-            d.appendChild(w); d.appendChild(t); box.appendChild(d);
+            var bd = document.createElement('span'); bd.style.cssText = 'min-width:0'; bd.appendChild(w); bd.appendChild(t); d.appendChild(bd); box.appendChild(d);
         });
         if (atBottom) box.scrollTop = box.scrollHeight;
     }
@@ -320,12 +323,13 @@
       box.innerHTML = '';
       if (!list || !list.length) { box.innerHTML = '<div class="rmsg empty">还没有人喊话</div>'; return; }
       list.forEach(function (m) {
-        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : '');
+        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : ''); d.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+        d.appendChild(BDAv.badge(m.n, 26));
         var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
         var t = document.createElement('span');
-        if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; t.appendChild(img); }
+        if (m.sf) { var img = document.createElement('img'); img.src = ctx + '/QQimgs/' + encodeURIComponent(m.sc) + '/' + encodeURIComponent(m.sf); img.alt = m.sf; img.style.cssText = 'max-width:90px;max-height:90px;display:block;margin-top:2px;border-radius:6px'; t.appendChild(img); }
         else t.textContent = m.t;
-        d.appendChild(w); d.appendChild(t); box.appendChild(d);
+        var bd = document.createElement('span'); bd.style.cssText = 'min-width:0'; bd.appendChild(w); bd.appendChild(t); d.appendChild(bd); box.appendChild(d);
       });
       if (atBottom) box.scrollTop = box.scrollHeight;
     }
@@ -334,11 +338,13 @@
       var n = ensureName(); if (!n) { alert('先取个名字才能喊话'); return; }
       var i = $('lobbyInput'), t = (i.value || '').trim(); if (!t) return;
       var b = new URLSearchParams(); b.set('name', n); b.set('text', t);
+      var av = ''; try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {} if (av) b.set('av', av);
       fetch(ctx + '/chat', { method: 'POST', body: b }).then(function () { i.value = ''; loadLobby(); });
     }
     function sendLobbySticker(cat, file) {
       var n = ensureName(); if (!n) { alert('先取个名字才能发表情'); return; }
       var b = new URLSearchParams(); b.set('name', n); b.set('scat', cat); b.set('sfile', file);
+      var av = ''; try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {} if (av) b.set('av', av);
       fetch(ctx + '/chat', { method: 'POST', body: b }).then(loadLobby);
     }
 

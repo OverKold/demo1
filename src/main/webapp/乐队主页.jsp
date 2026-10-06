@@ -22,14 +22,17 @@
 <div class="online-panel" id="onlinePanel">
     <div class="online-head" id="onlineHead">
         <span>🟢 在线 <span id="onlineCount">0</span> 人</span>
-        <span class="head-actions"><button id="renameBtn" type="button" title="改名">✏️ 改名</button><span class="toggle">收起</span></span>
+        <span class="head-actions"><button id="avatarToggle" type="button" class="avatar-btn" title="点击更换头像"><span class="avatar-btn-face"><span id="avatarBtnEmoji">🙂</span></span><span class="avatar-btn-text">换头像</span></button><button id="renameBtn" type="button" title="改名">✏️ 改名</button><span class="toggle">收起</span></span>
     </div>
     <div class="online-body" id="onlineBody">
         <div class="empty">加载中…</div>
     </div>
 </div>
+<div class="avatar-panel" id="avatarPanel" style="display:none"></div>
+<script src="${pageContext.request.contextPath}/js/bdav.js"></script>
 
 <div class="chat-panel" id="chatPanel">
+
     <div class="chat-head" id="chatHead">
         <span>💬 聊天室</span>
         <span class="toggle">收起</span>
@@ -42,9 +45,7 @@
             <div class="sp-tabs" id="spTabs"></div>
             <div class="sp-grid" id="spGrid"><div class="sp-empty">加载中…</div></div>
         </div>
-        <div class="avatar-panel" id="avatarPanel" style="display:none"></div>
         <div class="chat-input">
-            <button id="avatarToggle" type="button" title="换头像"><img id="avatarBtnImg" class="avatar-mini" alt="" style="display:none"><span id="avatarBtnEmoji">🙂</span></button>
             <button id="stickerToggle" type="button" title="发表情">😊</button>
             <input id="chatInput" type="text" maxlength="200" placeholder="说点什么…" autocomplete="off">
             <button id="chatSend">发送</button>
@@ -308,6 +309,10 @@
         head.addEventListener('click', function () {
             panel.classList.toggle('collapsed');
             toggle.textContent = panel.classList.contains('collapsed') ? '展开' : '收起';
+            if (panel.classList.contains('collapsed')) {
+                var ap = document.getElementById('avatarPanel');
+                if (ap) ap.style.display = 'none';
+            }
         });
 
         function render(list) {
@@ -320,14 +325,30 @@
                 countEl.textContent = '0';
                 return;
             }
-            list.forEach(function (n) {
+            list.forEach(function (it) {
+                var n = (typeof it === 'string') ? it : it.n;
+                var av = (typeof it === 'string') ? '' : (it.av || '');
                 var row = document.createElement('div');
                 row.className = 'name' + (n === myName ? ' me' : '');
+                var wrap = document.createElement('span');
+                wrap.className = 'on-av-wrap';
+                if (av) {
+                    var clip = document.createElement('span');
+                    clip.className = 'on-av-clip';
+                    window.BDAv.paint(clip, av);
+                    wrap.appendChild(clip);
+                } else {
+                    var d = document.createElement('span');
+                    d.className = 'on-av on-av-def';
+                    d.textContent = '🙂';
+                    wrap.appendChild(d);
+                }
                 var dot = document.createElement('span');
-                dot.className = 'dot';
+                dot.className = 'on-dot';
+                wrap.appendChild(dot);
                 var nm = document.createElement('span');
                 nm.textContent = n + (n === myName ? '（你）' : '');
-                row.appendChild(dot);
+                row.appendChild(wrap);
                 row.appendChild(nm);
                 body.appendChild(row);
             });
@@ -335,12 +356,16 @@
         }
 
         function beat() {
-            fetch(ctx + '/online?name=' + encodeURIComponent(myName) + '&page=' + encodeURIComponent('选择乐队主页'))
-                .then(function (r) {
-                    return r.json();
-                }).then(render).catch(function () {
+            var av = '';
+            try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {}
+            var url = ctx + '/online?name=' + encodeURIComponent(myName) + '&page=' + encodeURIComponent('选择乐队主页');
+            if (av) url += '&av=' + encodeURIComponent(av);
+            fetch(url).then(function (r) {
+                return r.json();
+            }).then(render).catch(function () {
             });
         }
+        window.addEventListener('bd:avatar', function () { if (myName) beat(); });
 
         // 根据是否管理员，切换右下角按钮与后台入口
         function applyAuth(isAdmin) {
@@ -624,12 +649,13 @@
             list.forEach(function (m) {
                 var line = document.createElement('div');
                 line.className = 'chat-msg' + (m.n === myName ? ' me' : '');
-                if (m.av) {
-                    var av = document.createElement('img');
-                    av.className = 'avatar';
-                    av.src = ctx + '/BangDreamsimg/' + m.av.split('/').map(encodeURIComponent).join('/');
-                    av.alt = ''; av.title = m.n; av.loading = 'lazy';
-                    line.appendChild(av);
+                var av = m.av || window.BDAv.byName(m.n);
+                if (av) {
+                    var aw = document.createElement('span');
+                    aw.className = 'avatar-wrap';
+                    aw.title = m.n;
+                    window.BDAv.paint(aw, av);
+                    line.appendChild(aw);
                 }
                 var meta = document.createElement('span');
                 meta.className = 'meta';
@@ -744,6 +770,7 @@
             body.set('name', name);
             body.set('scat', cat);
             body.set('sfile', file);
+            var a = curAvatar(); if (a) body.set('av', a);
             fetch(ctx + '/chat', {method: 'POST', body: body}).then(function (r) {
                 if (r.status === 403) alert('你已被管理员禁言，无法发送表情');
                 return r;
@@ -756,7 +783,6 @@
         var AKEY = 'visitorAvatar';
         var avatarPanel = document.getElementById('avatarPanel');
         var avatarToggle = document.getElementById('avatarToggle');
-        var avatarBtnImg = document.getElementById('avatarBtnImg');
         var avatarBtnEmoji = document.getElementById('avatarBtnEmoji');
         var AVATAR_GROUPS = {
             'MyGO!!!!!': ['Mygo/anon.png', 'Mygo/soyo.png', 'Mygo/tomori.png', 'Mygo/riki.png', 'Mygo/rana.png'],
@@ -766,7 +792,17 @@
             '一家DumbRock': ['一家Dumbrock/chieri.jpg', '一家Dumbrock/miku.jpg', '一家Dumbrock/raika.jpg', '一家Dumbrock/shizuku.jpg', '一家Dumbrock/yomogi.jpg']
         };
         function curAvatar() { try { return localStorage.getItem(AKEY) || ''; } catch (e) { return ''; } }
-        function avUrl(p) { return ctx + '/BangDreamsimg/' + p.split('/').map(encodeURIComponent).join('/'); }
+        function refreshAvatarBtn() {
+            var a = curAvatar();
+            var face = avatarToggle.querySelector('.avatar-btn-face');
+            if (a) {
+                window.BDAv.paint(face, a);
+                if (avatarBtnEmoji) avatarBtnEmoji.style.display = 'none';
+            } else {
+                if (face) face.style.backgroundImage = 'none';
+                if (avatarBtnEmoji) avatarBtnEmoji.style.display = 'inline';
+            }
+        }
         function buildAvatarPanel() {
             avatarPanel.innerHTML = '';
             var sel = curAvatar();
@@ -775,25 +811,32 @@
                 var row = document.createElement('div'); row.className = 'avatar-row';
                 AVATAR_GROUPS[g].forEach(function (p) {
                     var b = document.createElement('button'); b.type = 'button'; b.className = 'avatar-cell' + (p === sel ? ' on' : '');
-                    var im = document.createElement('img'); im.src = avUrl(p); im.alt = p; im.loading = 'lazy';
-                    b.appendChild(im);
+                    b.title = p; window.BDAv.paint(b, p);
                     b.onclick = function () {
                         try { localStorage.setItem(AKEY, p); } catch (e) {}
                         var cells = avatarPanel.querySelectorAll('.avatar-cell');
                         for (var i = 0; i < cells.length; i++) cells[i].classList.remove('on');
                         b.classList.add('on');
                         refreshAvatarBtn();
+                        try { window.dispatchEvent(new Event('bd:avatar')); } catch (e) {}
+                        avatarPanel.style.display = 'none';
                     };
                     row.appendChild(b);
                 });
                 avatarPanel.appendChild(row);
             });
         }
-        avatarToggle.addEventListener('click', function () {
+        avatarToggle.addEventListener('click', function (e) {
+            e.stopPropagation();
             var hidden = (avatarPanel.style.display === 'none' || avatarPanel.style.display === '');
             stPanel.style.display = 'none';
+            if (hidden) {
+                var r = document.getElementById('onlinePanel').getBoundingClientRect();
+                avatarPanel.style.top = (r.bottom + 6) + 'px';
+                avatarPanel.style.right = '18px';
+                buildAvatarPanel();
+            }
             avatarPanel.style.display = hidden ? 'flex' : 'none';
-            if (hidden) buildAvatarPanel();
         });
         refreshAvatarBtn();
 

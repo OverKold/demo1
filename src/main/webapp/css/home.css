@@ -715,6 +715,23 @@ a:hover {
         animation: none;
     }
 }
+
+/* ===== QQ 式在线头像 + 顶部换头像入口 ===== */
+.avatar-panel { position: fixed; top: 56px; right: 18px; width: 250px; max-height: 320px; z-index: 12;
+    background: rgba(30,28,44,.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.14); box-shadow: 0 12px 36px rgba(0,0,0,.45); }
+#onlineHead #avatarToggle { width: 28px; height: 28px; font-size: 15px; margin-right: 6px; vertical-align: middle; }
+#onlineHead .avatar-mini { width: 22px; height: 22px; }
+.on-av-wrap { position: relative; display: inline-block; width: 30px; height: 30px; margin-right: 8px; vertical-align: middle; flex: 0 0 auto; }
+.on-av { width: 30px; height: 30px; border-radius: 50%; display: block; background: rgba(0,0,0,.25); }
+.on-av-def { display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.on-dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: #4caf50; border: 2px solid rgba(30,28,44,.9); }
+
+/* ===== 头像容器（脸由 BDAv 用 canvas 预渲染成内联 background 注入，无需 CSS 缩放）===== */
+.on-av-clip { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; background: rgba(0,0,0,.25); }
+.avatar-wrap { display: inline-block; width: 28px; height: 28px; border-radius: 50%; overflow: hidden;
+    margin-right: 6px; vertical-align: middle; background: rgba(0, 0, 0, .25); flex: 0 0 auto; }
+
 /* ===== 聊天头像 ===== */
 .avatar-panel {
     max-height: 190px;
@@ -777,6 +794,15 @@ a:hover {
     display: block;
 }
 
+/* ===== 换头像：明显的胶囊按钮 ===== */
+#onlineHead #avatarToggle { width: auto; height: auto; padding: 3px 10px 3px 3px; border-radius: 999px; overflow: visible; gap: 6px; background: rgba(255,255,255,.16); }
+#onlineHead #avatarToggle:hover { background: rgba(255,255,255,.26); }
+.avatar-btn { display: inline-flex; }
+.avatar-btn-face { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: rgba(0,0,0,.28); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.avatar-btn-text { font-size: 12px; color: #eceaf4; white-space: nowrap; }
+#onlineHead .avatar-mini { width: 24px; height: 24px; }
+#avatarBtnEmoji { font-size: 15px; line-height: 1; }
+
 #avatarToggle {
     width: 34px;
     height: 34px;
@@ -804,4 +830,17 @@ a:hover {
     object-position: 50% 16%;
     margin-right: 6px;
     vertical-align: middle;
+}
+
+/* ===== 在线头部布局：加宽 + 禁止人数竖排 + 允许换行 ===== */
+.online-panel { width: 246px; }
+.online-head { flex-wrap: wrap; gap: 6px 8px; }
+.online-head > span:first-child { white-space: nowrap; }
+.online-head .head-actions { gap: 6px; flex-wrap: wrap; }
+
+/* ===== 面板改不透明 + 去毛玻璃 ===== */
+.online-panel, .avatar-panel {
+    background: #23212e;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }

@@ -22,6 +22,7 @@ public class OnlineServlet extends HttpServlet {
         public final String name;
         public volatile long lastSeen;
         public volatile String page;
+        public volatile String av;
         Visitor(String n) { name = n; lastSeen = System.currentTimeMillis(); }
     }
 
@@ -64,6 +65,8 @@ public class OnlineServlet extends HttpServlet {
                 v.lastSeen = now;
                 String page = req.getParameter("page");
                 if (page != null && !page.trim().isEmpty()) v.page = clean(page, 40);
+                String av = Avatars.norm(req.getParameter("av"));
+                if (av != null) v.av = av;
             }
         }
 
@@ -74,10 +77,12 @@ public class OnlineServlet extends HttpServlet {
         StringBuilder json = new StringBuilder(128);
         json.append('[');
         boolean first = true;
-        for (String n : map.keySet()) {
+        for (Visitor v : map.values()) {
             if (!first) json.append(',');
             first = false;
-            json.append('"').append(esc(n)).append('"');
+            json.append("{\"n\":\"").append(esc(v.name)).append('"');
+            if (v.av != null) json.append(",\"av\":\"").append(esc(v.av)).append('"');
+            json.append('}');
         }
         json.append(']');
 

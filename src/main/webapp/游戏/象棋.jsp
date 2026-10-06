@@ -45,6 +45,7 @@
     .ghost { background: rgba(255,255,255,.14) !important; }
   </style>
   <script src="${pageContext.request.contextPath}/js/sticker-picker.js"></script>
+  <script src="${pageContext.request.contextPath}/js/bdav.js"></script>
 </head>
 <body>
 <h1>🐉 象棋 · 联机房间</h1>
@@ -253,7 +254,7 @@
       prevLast = key;
       draw();
       var name = myName(), ul = $('memberList'); ul.innerHTML = '';
-      (st.members || []).forEach(function (m) { var li = document.createElement('li'); li.textContent = m + (m === name ? '（你）' : ''); ul.appendChild(li); });
+      (st.members || []).forEach(function (m) { var li = document.createElement('li'); li.style.cssText = 'display:flex;align-items:center;gap:6px'; li.appendChild(BDAv.badge(m, 22)); var sp = document.createElement('span'); sp.textContent = m + (m === name ? '（你）' : ''); li.appendChild(sp); ul.appendChild(li); });
       renderMsgs(st.msg || []);
       var red = st.red || '空位（等待入座）', black = st.black || '空位（等待入座）', s;
       if (st.phase === 0) s = '🔴 红方 ' + red + '　⚫ 黑方 ' + black + (st.red && st.black ? '　—— 红先，走子即开局' : '　—— 还需一位真人入座');
@@ -274,17 +275,18 @@
       $('btnResign').style.display = (st.phase === 1 && st.myColor !== 0) ? '' : 'none';
       $('btnRestart').style.display = (st.phase === 2 && st.myColor !== 0) ? '' : 'none';
     }
-    function stkImg(sc, sf) { var i = document.createElement('img'); i.src = ctx + '/QQimgs/' + encodeURIComponent(sc) + '/' + encodeURIComponent(sf); i.alt = sf; i.style.cssText = 'max-width:90px;max-height:90px;vertical-align:middle;border-radius:6px'; return i; }
+    function stkImg(sc, sf) { var i = document.createElement('img'); i.src = ctx + '/QQimgs/' + encodeURIComponent(sc) + '/' + encodeURIComponent(sf); i.alt = sf; i.style.cssText = 'max-width:90px;max-height:90px;display:block;margin-top:2px;border-radius:6px'; return i; }
     function fillMsgs(box, list, emptyText) {
       var atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 30, my = myName();
       box.innerHTML = '';
       if (!list || !list.length) { box.innerHTML = '<div class="rmsg empty">' + emptyText + '</div>'; return; }
       list.forEach(function (m) {
-        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : '');
+        var d = document.createElement('div'); d.className = 'rmsg' + (m.n === my ? ' me' : ''); d.style.cssText = 'display:flex;gap:6px;align-items:flex-start';
+        d.appendChild(BDAv.badge(m.n, 26));
         var w = document.createElement('span'); w.className = 'rw'; w.textContent = m.n + '：';
         var t = document.createElement('span');
         if (m.sf) t.appendChild(stkImg(m.sc, m.sf)); else t.textContent = m.t;
-        d.appendChild(w); d.appendChild(t); box.appendChild(d);
+        var bd = document.createElement('span'); bd.style.cssText = 'min-width:0'; bd.appendChild(w); bd.appendChild(t); d.appendChild(bd); box.appendChild(d);
       });
       if (atBottom) box.scrollTop = box.scrollHeight;
     }
@@ -338,11 +340,13 @@
       var n = ensureName(); if (!n) { alert('先取个名字才能喊话'); return; }
       var inp = $('lobbyInput'), text = (inp.value || '').trim(); if (!text) return;
       var b = new URLSearchParams(); b.set('name', n); b.set('text', text);
+      var av = ''; try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {} if (av) b.set('av', av);
       fetch(ctx + '/chat', { method: 'POST', body: b }).then(function () { inp.value = ''; loadLobby(); }).catch(function () {});
     }
     function sendLobbySticker(cat, file) {
       var n = ensureName(); if (!n) { alert('先取个名字才能发表情'); return; }
       var b = new URLSearchParams(); b.set('name', n); b.set('scat', cat); b.set('sfile', file);
+      var av = ''; try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {} if (av) b.set('av', av);
       fetch(ctx + '/chat', { method: 'POST', body: b }).then(loadLobby).catch(function () {});
     }
 

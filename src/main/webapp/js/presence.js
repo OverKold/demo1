@@ -36,8 +36,11 @@
         function beat() {
             var visitor = sessionStorage.getItem('visitorName') || '';
             if (!visitor) return;
-            fetch(ctx + '/online?name=' + encodeURIComponent(visitor) + '&page=' + encodeURIComponent(page))
-                .catch(function () {});
+            var av = '';
+            try { av = localStorage.getItem('visitorAvatar') || ''; } catch (e) {}
+            var url = ctx + '/online?name=' + encodeURIComponent(visitor) + '&page=' + encodeURIComponent(page);
+            if (av) url += '&av=' + encodeURIComponent(av);
+            fetch(url).catch(function () {});
         }
         beat();
         setInterval(beat, 10000);
