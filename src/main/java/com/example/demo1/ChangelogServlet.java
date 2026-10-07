@@ -24,16 +24,37 @@ public class ChangelogServlet extends HttpServlet {
 
     private final Object lock = new Object();
 
-    // 存放位置：优先 -Dchangelog.path / 环境变量 CHANGELOG_PATH，
-    // 否则用固定绝对路径 ${user.home}/.demo1-data/changelog.txt。
+    // 存放位置优先级：
+    // 1. -Dchangelog.path / 环境变量 CHANGELOG_PATH（显式指定）；
+    // 2. 项目仓库内的 data/changelog.txt —— war exploded 部署时 webapp 真实路径是
+    //    <项目>/target/demo1-1.0-SNAPSHOT，向上回溯找到含 .git 的项目根即可命中，
+    //    这样更新日志随 git 在台式机/笔记本之间同步；
+    // 3. 兜底 ${user.home}/.demo1-data/changelog.txt（Docker 等独立部署场景）。
     // 不用 ${catalina.base}：IDEA 内置 Tomcat 的 catalina.base 是每次运行可能重建的临时目录，
     // 重启后 data/changelog.txt 会被清掉，导致更新日志“看起来被清空”。
     private Path file() {
         String custom = System.getProperty("changelog.path", System.getenv("CHANGELOG_PATH"));
         if (custom != null && !custom.isEmpty()) return Paths.get(custom);
+        Path inRepo = repoDataFile();
+        if (inRepo != null) return inRepo;
         String home = System.getProperty("user.home");
         if (home == null || home.isEmpty()) home = System.getProperty("java.io.tmpdir");
         return Paths.get(home, ".demo1-data", "changelog.txt");
+    }
+
+    // 从 webapp 真实路径逐级向上，找同时满足「含 .git」且「含 data/changelog.txt」的目录；
+    // 找不到（如 Docker 部署）返回 null，由调用方回退到用户目录。
+    private Path repoDataFile() {
+        try {
+            String real = getServletContext().getRealPath("/");
+            if (real == null) return null;
+            Path p = Paths.get(real).toAbsolutePath();
+            for (int i = 0; i < 6 && p != null; i++, p = p.getParent()) {
+                Path data = p.resolve("data").resolve("changelog.txt");
+                if (Files.exists(data) && Files.exists(p.resolve(".git"))) return data;
+            }
+        } catch (Exception ignore) { }
+        return null;
     }
 
     private String read() {
