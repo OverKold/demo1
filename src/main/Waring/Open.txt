@@ -1,2 +1,9 @@
 #在启动tomcat 10.1.60 的时候，还需要在终端里面把隧道跑起来
-#代码如下: " cloudflared tunnel run demo1 "
+
+# 代码如下: " cloudflared tunnel run demo1 "
+# 域名:overkold.dpdns.org
+
+# 上面是台式启动的命令，因为凭证不一样，所以启动的代码有些许不同
+
+# 这是笔记本的代码: " cloudflared tunnel run demo1-laptop "
+# 域名:laptop.overkold.dpdns.org
